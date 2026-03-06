@@ -4,22 +4,102 @@ import { useState, useMemo } from "react";
 import { GENRES, WORKS, filterByGenre } from "@/lib/works";
 
 const DIRECTION_PRESETS = [
-  { id: "satsubatsu-muku", label: "殺伐×無垢", example: "呪術廻戦 × ちいかわ" },
-  { id: "surreal-gag", label: "シュールギャグ", example: "どうぶつの森 × キングダム" },
-  { id: "ability-mismatch", label: "能力ミスマッチ", example: "コナン × 煉獄" },
-  { id: "nichijou-shinshoku", label: "日常侵食", example: "エヴァ × しんちゃん" },
-  { id: "dark-fantasy", label: "ダークファンタジー", example: "ベルセルク × ポケモン" },
-  { id: "honobono-konton", label: "ほのぼの混沌", example: "すみっコ × 進撃の巨人" },
-  { id: "emotional", label: "エモーショナル", example: "CLANNAD × 鬼滅の刃" },
-  { id: "battle-royale", label: "バトルロイヤル", example: "ドラゴンボール × ナルト" },
-  { id: "saikyou-taiketsu", label: "最強対決", example: "サイタマ × 悟空" },
-  { id: "iyashi-horror", label: "癒し×ホラー", example: "よつばと! × 東京喰種" },
-  { id: "chiraku-battle", label: "知略バトル", example: "デスノート × カイジ" },
-  { id: "sedai-gap", label: "世代ギャップ", example: "鬼滅の刃 × 北斗の拳" },
-  { id: "shokuba-taiken", label: "職場体験", example: "SPY×FAMILY × こち亀" },
-  { id: "tsukkomi-fuzai", label: "ツッコミ不在", example: "ボーボボ × ポプテピ" },
-  { id: "gourmet-chaos", label: "グルメカオス", example: "トリコ × ダンジョン飯" },
-  { id: "isekai-tensei", label: "異世界転生", example: "Re:ゼロ × サザエさん" },
+  { id: "satsubatsu-muku", label: "殺伐×無垢", combos: [
+    { workA: "呪術廻戦", workB: "ちいかわ" },
+    { workA: "進撃の巨人", workB: "すみっコぐらし" },
+    { workA: "東京喰種", workB: "どうぶつの森" },
+    { workA: "チェンソーマン", workB: "よつばと!" },
+  ]},
+  { id: "surreal-gag", label: "シュールギャグ", combos: [
+    { workA: "どうぶつの森", workB: "キングダム" },
+    { workA: "サザエさん", workB: "ジョジョの奇妙な冒険" },
+    { workA: "ちびまる子ちゃん", workB: "ベルセルク" },
+    { workA: "日常", workB: "BLEACH" },
+  ]},
+  { id: "ability-mismatch", label: "能力ミスマッチ", combos: [
+    { workA: "名探偵コナン", workB: "鬼滅の刃" },
+    { workA: "ドラえもん", workB: "呪術廻戦" },
+    { workA: "クレヨンしんちゃん", workB: "NARUTO" },
+    { workA: "サザエさん", workB: "HUNTER×HUNTER" },
+  ]},
+  { id: "nichijou-shinshoku", label: "日常侵食", combos: [
+    { workA: "新世紀エヴァンゲリオン", workB: "クレヨンしんちゃん" },
+    { workA: "進撃の巨人", workB: "ドラえもん" },
+    { workA: "デスノート", workB: "サザエさん" },
+    { workA: "東京喰種", workB: "ちびまる子ちゃん" },
+  ]},
+  { id: "dark-fantasy", label: "ダークファンタジー", combos: [
+    { workA: "ベルセルク", workB: "ポケモン" },
+    { workA: "メイドインアビス", workB: "星のカービィ" },
+    { workA: "GANTZ", workB: "マリオシリーズ" },
+    { workA: "約束のネバーランド", workB: "どうぶつの森" },
+  ]},
+  { id: "honobono-konton", label: "ほのぼの混沌", combos: [
+    { workA: "すみっコぐらし", workB: "進撃の巨人" },
+    { workA: "ちいかわ", workB: "鬼滅の刃" },
+    { workA: "となりのトトロ", workB: "呪術廻戦" },
+    { workA: "よつばと!", workB: "チェンソーマン" },
+  ]},
+  { id: "emotional", label: "エモーショナル", combos: [
+    { workA: "CLANNAD", workB: "鬼滅の刃" },
+    { workA: "あの花", workB: "葬送のフリーレン" },
+    { workA: "四月は君の嘘", workB: "ヴァイオレット・エヴァーガーデン" },
+    { workA: "君の名は。", workB: "Re:ゼロ" },
+  ]},
+  { id: "battle-royale", label: "バトルロイヤル", combos: [
+    { workA: "ドラゴンボール", workB: "NARUTO" },
+    { workA: "ワンピース", workB: "BLEACH" },
+    { workA: "呪術廻戦", workB: "鬼滅の刃" },
+    { workA: "僕のヒーローアカデミア", workB: "HUNTER×HUNTER" },
+  ]},
+  { id: "saikyou-taiketsu", label: "最強対決", combos: [
+    { workA: "ワンパンマン", workB: "ドラゴンボール" },
+    { workA: "北斗の拳", workB: "バキ" },
+    { workA: "ジョジョの奇妙な冒険", workB: "HUNTER×HUNTER" },
+    { workA: "鋼の錬金術師", workB: "Fate/stay night" },
+  ]},
+  { id: "iyashi-horror", label: "癒し×ホラー", combos: [
+    { workA: "よつばと!", workB: "東京喰種" },
+    { workA: "ちいかわ", workB: "ひぐらしのなく頃に" },
+    { workA: "すみっコぐらし", workB: "約束のネバーランド" },
+    { workA: "となりのトトロ", workB: "寄生獣" },
+  ]},
+  { id: "chiraku-battle", label: "知略バトル", combos: [
+    { workA: "デスノート", workB: "カイジ" },
+    { workA: "名探偵コナン", workB: "LIAR GAME" },
+    { workA: "コードギアス", workB: "HUNTER×HUNTER" },
+    { workA: "STEINS;GATE", workB: "デスノート" },
+  ]},
+  { id: "sedai-gap", label: "世代ギャップ", combos: [
+    { workA: "鬼滅の刃", workB: "北斗の拳" },
+    { workA: "呪術廻戦", workB: "聖闘士星矢" },
+    { workA: "チェンソーマン", workB: "シティーハンター" },
+    { workA: "ブルーロック", workB: "キャプテン翼" },
+  ]},
+  { id: "shokuba-taiken", label: "職場体験", combos: [
+    { workA: "SPY×FAMILY", workB: "こちら葛飾区亀有公園前派出所" },
+    { workA: "銀魂", workB: "暗殺教室" },
+    { workA: "ドラえもん", workB: "薬屋のひとりごと" },
+    { workA: "サザエさん", workB: "ゴールデンカムイ" },
+  ]},
+  { id: "tsukkomi-fuzai", label: "ツッコミ不在", combos: [
+    { workA: "ボボボーボ・ボーボボ", workB: "ポプテピピック" },
+    { workA: "銀魂", workB: "おそ松さん" },
+    { workA: "日常", workB: "斉木楠雄のΨ難" },
+    { workA: "磯部磯兵衛物語", workB: "ボボボーボ・ボーボボ" },
+  ]},
+  { id: "gourmet-chaos", label: "グルメカオス", combos: [
+    { workA: "トリコ", workB: "ダンジョン飯" },
+    { workA: "ワンピース", workB: "銀魂" },
+    { workA: "ドラゴンボール", workB: "ちいかわ" },
+    { workA: "鬼滅の刃", workB: "よつばと!" },
+  ]},
+  { id: "isekai-tensei", label: "異世界転生", combos: [
+    { workA: "Re:ゼロ", workB: "サザエさん" },
+    { workA: "このすば", workB: "ちびまる子ちゃん" },
+    { workA: "転生したらスライムだった件", workB: "ドラえもん" },
+    { workA: "無職転生", workB: "クレヨンしんちゃん" },
+  ]},
 ];
 
 const BEAT_COLORS: Record<string, string> = {
@@ -250,20 +330,30 @@ export default function GeneratorPage() {
             方向性（テーマ・トーン）
           </label>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2">
-            {DIRECTION_PRESETS.map((p) => (
-              <button
-                key={p.id}
-                onClick={() => setDirection(p.label)}
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors border ${
-                  direction === p.label
-                    ? "bg-blue-600 border-blue-500 text-white"
-                    : "bg-gray-900 border-gray-700 text-gray-300 hover:border-gray-500"
-                }`}
-              >
-                <div>{p.label}</div>
-                <div className="text-xs opacity-60 mt-0.5">{p.example}</div>
-              </button>
-            ))}
+            {DIRECTION_PRESETS.map((p) => {
+              const example = p.combos[0];
+              return (
+                <button
+                  key={p.id}
+                  onClick={() => {
+                    setDirection(p.label);
+                    const combo = p.combos[Math.floor(Math.random() * p.combos.length)];
+                    setWorldWork(combo.workA);
+                    setWorldChars([]);
+                    setCharWork(combo.workB);
+                    setCharChars([]);
+                  }}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors border ${
+                    direction === p.label
+                      ? "bg-blue-600 border-blue-500 text-white"
+                      : "bg-gray-900 border-gray-700 text-gray-300 hover:border-gray-500"
+                  }`}
+                >
+                  <div>{p.label}</div>
+                  <div className="text-xs opacity-60 mt-0.5">{example.workA} × {example.workB}</div>
+                </button>
+              );
+            })}
           </div>
           <input
             type="text"
