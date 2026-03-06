@@ -12,6 +12,14 @@ const DIRECTION_PRESETS = [
   { id: "honobono-konton", label: "ほのぼの混沌", example: "すみっコ × 進撃の巨人" },
   { id: "emotional", label: "エモーショナル", example: "CLANNAD × 鬼滅の刃" },
   { id: "battle-royale", label: "バトルロイヤル", example: "ドラゴンボール × ナルト" },
+  { id: "saikyou-taiketsu", label: "最強対決", example: "サイタマ × 悟空" },
+  { id: "iyashi-horror", label: "癒し×ホラー", example: "よつばと! × 東京喰種" },
+  { id: "chiraku-battle", label: "知略バトル", example: "デスノート × カイジ" },
+  { id: "sedai-gap", label: "世代ギャップ", example: "鬼滅の刃 × 北斗の拳" },
+  { id: "shokuba-taiken", label: "職場体験", example: "SPY×FAMILY × こち亀" },
+  { id: "tsukkomi-fuzai", label: "ツッコミ不在", example: "ボーボボ × ポプテピ" },
+  { id: "gourmet-chaos", label: "グルメカオス", example: "トリコ × ダンジョン飯" },
+  { id: "isekai-tensei", label: "異世界転生", example: "Re:ゼロ × サザエさん" },
 ];
 
 const BEAT_COLORS: Record<string, string> = {
