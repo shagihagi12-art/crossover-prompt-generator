@@ -25,7 +25,7 @@ function WorkSelector({
   label,
   value,
   onChange,
-  characterValue,
+  characterValues,
   onCharacterChange,
   placeholder,
   characterPlaceholder,
@@ -33,8 +33,8 @@ function WorkSelector({
   label: string;
   value: string;
   onChange: (v: string) => void;
-  characterValue: string;
-  onCharacterChange: (v: string) => void;
+  characterValues: string[];
+  onCharacterChange: (v: string[]) => void;
   placeholder: string;
   characterPlaceholder: string;
 }) {
@@ -80,7 +80,7 @@ function WorkSelector({
                 .map((w) => (
                   <button
                     key={w.name}
-                    onClick={() => { onChange(w.name); onCharacterChange(""); setIsOpen(false); }}
+                    onClick={() => { onChange(w.name); onCharacterChange([]); setIsOpen(false); }}
                     className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-700 transition-colors flex items-center justify-between ${
                       value === w.name ? "bg-blue-900/40 text-blue-300" : "text-gray-200"
                     }`}
@@ -101,9 +101,15 @@ function WorkSelector({
           {selectedWork.characters.map((c) => (
             <button
               key={c}
-              onClick={() => onCharacterChange(characterValue === c ? "" : c)}
+              onClick={() => {
+                if (characterValues.includes(c)) {
+                  onCharacterChange(characterValues.filter((v) => v !== c));
+                } else {
+                  onCharacterChange([...characterValues, c]);
+                }
+              }}
               className={`px-2 py-1 rounded text-xs transition-colors border ${
-                characterValue === c
+                characterValues.includes(c)
                   ? "bg-blue-600 border-blue-500 text-white"
                   : "bg-gray-900 border-gray-700 text-gray-400 hover:border-gray-500"
               }`}
@@ -115,8 +121,15 @@ function WorkSelector({
       )}
       <input
         type="text"
-        value={characterValue}
-        onChange={(e) => onCharacterChange(e.target.value)}
+        value={characterValues.join("・")}
+        onChange={(e) => {
+          const text = e.target.value;
+          if (text === "") {
+            onCharacterChange([]);
+          } else {
+            onCharacterChange(text.split("・").map((s) => s.trim()).filter(Boolean));
+          }
+        }}
         placeholder={characterPlaceholder}
         className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
       />
@@ -144,17 +157,17 @@ interface PromptResult {
 export default function GeneratorPage() {
   const [direction, setDirection] = useState("");
   const [worldWork, setWorldWork] = useState("");
-  const [worldChar, setWorldChar] = useState("");
+  const [worldChars, setWorldChars] = useState<string[]>([]);
   const [charWork, setCharWork] = useState("");
-  const [charChar, setCharChar] = useState("");
+  const [charChars, setCharChars] = useState<string[]>([]);
   const [detail, setDetail] = useState("");
   const [prompt, setPrompt] = useState<string | null>(null);
   const [parsed, setParsed] = useState<PromptResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
-  const world = worldChar ? `${worldWork}（${worldChar}）` : worldWork;
-  const character = charChar ? `${charWork}の${charChar}` : charWork;
+  const world = worldChars.length > 0 ? `${worldWork}（${worldChars.join("・")}）` : worldWork;
+  const character = charChars.length > 0 ? `${charWork}の${charChars.join("・")}` : charWork;
   const canGenerate = direction.trim() && worldWork.trim() && charWork.trim();
 
   const handleGenerate = async () => {
@@ -259,19 +272,19 @@ export default function GeneratorPage() {
             label="作品A（世界観・舞台）"
             value={worldWork}
             onChange={setWorldWork}
-            characterValue={worldChar}
-            onCharacterChange={setWorldChar}
+            characterValues={worldChars}
+            onCharacterChange={setWorldChars}
             placeholder="作品名を選択 or 入力"
-            characterPlaceholder="キャラ指定（任意・自由入力OK）"
+            characterPlaceholder="キャラ指定（複数可・「・」区切り）"
           />
           <WorkSelector
             label="作品B（迷い込むキャラ）"
             value={charWork}
             onChange={setCharWork}
-            characterValue={charChar}
-            onCharacterChange={setCharChar}
+            characterValues={charChars}
+            onCharacterChange={setCharChars}
             placeholder="作品名を選択 or 入力"
-            characterPlaceholder="キャラ指定（任意・自由入力OK）"
+            characterPlaceholder="キャラ指定（複数可・「・」区切り）"
           />
         </div>
 
