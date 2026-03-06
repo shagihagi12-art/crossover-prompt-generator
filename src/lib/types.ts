@@ -6,23 +6,26 @@ export const DialogueSchema = z.object({
   emotion: z.string(),
 });
 
-export const AlternativeAngleSchema = z.object({
-  angle: z.string(),
+export const PanelSchema = z.object({
+  number: z.number(),
+  beat: z.string(),
   description: z.string(),
+  dialogue: z.array(DialogueSchema),
 });
 
 export const CrossoverPromptSchema = z.object({
-  title: z.string(),
-  prompt_en: z.string(),
-  prompt_ja: z.string(),
+  main_title: z.string(),
+  subtitle: z.string(),
+  prompt_full: z.string(),
   scene_description: z.string(),
-  dialogue: z.array(DialogueSchema),
-  visual_notes: z.array(z.string()),
-  style_tags: z.array(z.string()),
-  alternative_angles: z.array(AlternativeAngleSchema),
+  panels: z.array(PanelSchema),
+  style_mix: z.string(),
+  visual_effects: z.array(z.string()),
 });
 
 export type CrossoverPrompt = z.infer<typeof CrossoverPromptSchema>;
+export type Panel = z.infer<typeof PanelSchema>;
+export type Dialogue = z.infer<typeof DialogueSchema>;
 
 export interface GenerateInput {
   direction: string;

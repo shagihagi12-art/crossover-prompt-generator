@@ -6,8 +6,8 @@ import "./globals.css";
 const geist = Geist({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Crossover Prompt Generator",
-  description: "異世界クロスオーバー画像プロンプト生成ツール",
+  title: "4コマ Crossover Generator",
+  description: "クロスオーバー4コマ漫画プロンプト生成ツール",
 };
 
 export default function RootLayout({
@@ -23,7 +23,7 @@ export default function RootLayout({
         <nav className="border-b border-gray-800 bg-gray-950/80 backdrop-blur sticky top-0 z-50">
           <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
             <Link href="/" className="text-lg font-bold tracking-tight">
-              🎨 Crossover Prompt Generator
+              🎨 4コマ Crossover Generator
             </Link>
             <div className="flex gap-4">
               <Link

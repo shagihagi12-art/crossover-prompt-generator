@@ -6,13 +6,20 @@ import { GENRES, WORKS, filterByGenre } from "@/lib/works";
 const DIRECTION_PRESETS = [
   { id: "satsubatsu-muku", label: "殺伐×無垢", example: "呪術廻戦 × ちいかわ" },
   { id: "surreal-gag", label: "シュールギャグ", example: "どうぶつの森 × キングダム" },
-  { id: "ability-mismatch", label: "能力ミスマッチ", example: "ワンピース × サザエさん" },
+  { id: "ability-mismatch", label: "能力ミスマッチ", example: "コナン × 煉獄" },
   { id: "nichijou-shinshoku", label: "日常侵食", example: "エヴァ × しんちゃん" },
   { id: "dark-fantasy", label: "ダークファンタジー", example: "ベルセルク × ポケモン" },
   { id: "honobono-konton", label: "ほのぼの混沌", example: "すみっコ × 進撃の巨人" },
   { id: "emotional", label: "エモーショナル", example: "CLANNAD × 鬼滅の刃" },
   { id: "battle-royale", label: "バトルロイヤル", example: "ドラゴンボール × ナルト" },
 ];
+
+const BEAT_COLORS: Record<string, string> = {
+  "起": "border-blue-500 bg-blue-900/20",
+  "承": "border-green-500 bg-green-900/20",
+  "転": "border-yellow-500 bg-yellow-900/20",
+  "結": "border-red-500 bg-red-900/20",
+};
 
 function WorkSelector({
   label,
@@ -40,8 +47,6 @@ function WorkSelector({
   return (
     <div className="space-y-2">
       <label className="block text-sm font-medium text-gray-400">{label}</label>
-
-      {/* Genre filter */}
       <div className="flex flex-wrap gap-1">
         {GENRES.map((g) => (
           <button
@@ -57,8 +62,6 @@ function WorkSelector({
           </button>
         ))}
       </div>
-
-      {/* Work dropdown */}
       <div className="relative">
         <input
           type="text"
@@ -77,11 +80,7 @@ function WorkSelector({
                 .map((w) => (
                   <button
                     key={w.name}
-                    onClick={() => {
-                      onChange(w.name);
-                      onCharacterChange("");
-                      setIsOpen(false);
-                    }}
+                    onClick={() => { onChange(w.name); onCharacterChange(""); setIsOpen(false); }}
                     className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-700 transition-colors flex items-center justify-between ${
                       value === w.name ? "bg-blue-900/40 text-blue-300" : "text-gray-200"
                     }`}
@@ -91,33 +90,27 @@ function WorkSelector({
                   </button>
                 ))}
               {filtered.filter((w) => !value || w.name.toLowerCase().includes(value.toLowerCase())).length === 0 && (
-                <div className="px-3 py-2 text-sm text-gray-500">
-                  該当なし（自由入力OK）
-                </div>
+                <div className="px-3 py-2 text-sm text-gray-500">該当なし（自由入力OK）</div>
               )}
             </div>
           </>
         )}
       </div>
-
-      {/* Character selector */}
       {selectedWork && selectedWork.characters.length > 0 && (
-        <div>
-          <div className="flex flex-wrap gap-1 mt-1">
-            {selectedWork.characters.map((c) => (
-              <button
-                key={c}
-                onClick={() => onCharacterChange(characterValue === c ? "" : c)}
-                className={`px-2 py-1 rounded text-xs transition-colors border ${
-                  characterValue === c
-                    ? "bg-blue-600 border-blue-500 text-white"
-                    : "bg-gray-900 border-gray-700 text-gray-400 hover:border-gray-500"
-                }`}
-              >
-                {c}
-              </button>
-            ))}
-          </div>
+        <div className="flex flex-wrap gap-1 mt-1">
+          {selectedWork.characters.map((c) => (
+            <button
+              key={c}
+              onClick={() => onCharacterChange(characterValue === c ? "" : c)}
+              className={`px-2 py-1 rounded text-xs transition-colors border ${
+                characterValue === c
+                  ? "bg-blue-600 border-blue-500 text-white"
+                  : "bg-gray-900 border-gray-700 text-gray-400 hover:border-gray-500"
+              }`}
+            >
+              {c}
+            </button>
+          ))}
         </div>
       )}
       <input
@@ -131,6 +124,23 @@ function WorkSelector({
   );
 }
 
+interface PanelData {
+  number: number;
+  beat: string;
+  description: string;
+  dialogue: { character: string; line: string; emotion: string }[];
+}
+
+interface PromptResult {
+  main_title: string;
+  subtitle: string;
+  prompt_full: string;
+  scene_description: string;
+  panels: PanelData[];
+  style_mix: string;
+  visual_effects: string[];
+}
+
 export default function GeneratorPage() {
   const [direction, setDirection] = useState("");
   const [worldWork, setWorldWork] = useState("");
@@ -139,19 +149,19 @@ export default function GeneratorPage() {
   const [charChar, setCharChar] = useState("");
   const [detail, setDetail] = useState("");
   const [prompt, setPrompt] = useState<string | null>(null);
+  const [parsed, setParsed] = useState<PromptResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
-  // Build the world/character strings for the API
   const world = worldChar ? `${worldWork}（${worldChar}）` : worldWork;
   const character = charChar ? `${charWork}の${charChar}` : charWork;
-
   const canGenerate = direction.trim() && worldWork.trim() && charWork.trim();
 
   const handleGenerate = async () => {
     if (!canGenerate) return;
     setError(null);
     setPrompt(null);
+    setParsed(null);
 
     try {
       const res = await fetch("/api/generate", {
@@ -164,12 +174,13 @@ export default function GeneratorPage() {
           detail: detail.trim() || undefined,
         }),
       });
-
       const data = await res.json();
       if (data.error) {
         setError(data.error);
       } else {
         setPrompt(data.prompt);
+        // Try to parse as instruction for later - not used for now
+        // The prompt is what gets copied to AI
       }
     } catch {
       setError("通信エラーが発生しました");
@@ -206,9 +217,9 @@ export default function GeneratorPage() {
       {/* Input Form */}
       <section className="space-y-6">
         <div>
-          <h2 className="text-xl font-bold">プロンプト生成</h2>
+          <h2 className="text-xl font-bold">4コマ漫画プロンプト生成</h2>
           <p className="text-sm text-gray-500 mt-1">
-            入力内容からAIに渡すプロンプトを生成します。コピーしてお好きなAI（ChatGPT / Gemini / Claude等）に貼り付けてください。
+            クロスオーバー4コマ漫画の画像生成プロンプトを作成します。AIに貼り付けてそのまま画像生成できます。
           </p>
         </div>
 
@@ -242,7 +253,7 @@ export default function GeneratorPage() {
           />
         </div>
 
-        {/* World & Character - side by side on desktop */}
+        {/* World & Character */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <WorkSelector
             label="作品A（世界観・舞台）"
@@ -272,7 +283,7 @@ export default function GeneratorPage() {
           <textarea
             value={detail}
             onChange={(e) => setDetail(e.target.value)}
-            placeholder="例: たぬきち商店でローンを組まされる王騎将軍。「天下の大将軍ですよ」"
+            placeholder='例: たぬきち商店でローンを組まされる。「天下の大将軍ですよ」「ンォフゥッ」'
             rows={3}
             className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
           />
@@ -284,7 +295,7 @@ export default function GeneratorPage() {
           disabled={!canGenerate}
           className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-medium transition-colors"
         >
-          プロンプトを生成
+          4コマプロンプトを生成
         </button>
 
         {error && (
@@ -298,39 +309,37 @@ export default function GeneratorPage() {
       {prompt && (
         <section className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold">生成されたプロンプト</h2>
-            <div className="flex gap-2">
-              <button
-                onClick={saveToHistory}
-                className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                  copiedField === "saved"
-                    ? "bg-green-600 text-white"
-                    : "bg-gray-800 hover:bg-gray-700 text-gray-300"
-                }`}
-              >
-                {copiedField === "saved" ? "保存しました!" : "履歴に保存"}
-              </button>
-            </div>
+            <h2 className="text-xl font-bold">生成結果</h2>
+            <button
+              onClick={saveToHistory}
+              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                copiedField === "saved"
+                  ? "bg-green-600 text-white"
+                  : "bg-gray-800 hover:bg-gray-700 text-gray-300"
+              }`}
+            >
+              {copiedField === "saved" ? "保存しました!" : "履歴に保存"}
+            </button>
           </div>
 
-          {/* Full Prompt */}
-          <div className="bg-gray-900 rounded-xl border border-gray-800 p-4">
+          {/* Main Copy Area - prompt_full equivalent */}
+          <div className="bg-gray-900 rounded-xl border-2 border-blue-600 p-4">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-medium text-gray-400">
+              <h3 className="text-sm font-bold text-blue-400">
                 AIに渡すプロンプト（全文）
               </h3>
               <button
                 onClick={() => copyText(prompt, "full")}
-                className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                className={`px-5 py-2 rounded-lg text-sm font-bold transition-colors ${
                   copiedField === "full"
                     ? "bg-green-600 text-white"
                     : "bg-blue-600 hover:bg-blue-700 text-white"
                 }`}
               >
-                {copiedField === "full" ? "Copied!" : "コピーする"}
+                {copiedField === "full" ? "Copied!" : "Geminiにコピー"}
               </button>
             </div>
-            <pre className="text-sm text-gray-200 whitespace-pre-wrap leading-relaxed bg-gray-800 rounded-lg p-4 max-h-96 overflow-y-auto">
+            <pre className="text-sm text-gray-200 whitespace-pre-wrap leading-relaxed bg-gray-800 rounded-lg p-4 max-h-80 overflow-y-auto">
               {prompt}
             </pre>
           </div>
@@ -339,10 +348,10 @@ export default function GeneratorPage() {
           <div className="bg-blue-900/20 border border-blue-800/50 rounded-xl p-4">
             <h3 className="text-sm font-medium text-blue-300 mb-2">使い方</h3>
             <ol className="text-sm text-blue-200/80 space-y-1 list-decimal list-inside">
-              <li>上のプロンプトを「コピーする」ボタンでコピー</li>
-              <li>お好きなAI（ChatGPT / Gemini / Claude）に貼り付けて送信</li>
-              <li>AIが画像生成用のプロンプト（EN/JA）やシーン設定をJSON形式で返します</li>
-              <li>返ってきた英語プロンプトを画像生成AI（Gemini等）に入力して画像を生成</li>
+              <li>上のプロンプトを「Geminiにコピー」ボタンでコピー</li>
+              <li>ChatGPT / Gemini / Claude に貼り付けて送信</li>
+              <li>AIがJSON形式で4コマ漫画の詳細設定を返します</li>
+              <li>返ってきた <code className="bg-gray-800 px-1 rounded">prompt_full</code> をGeminiの画像生成に貼り付けて4コマ漫画画像を生成</li>
             </ol>
           </div>
         </section>
