@@ -250,13 +250,13 @@ export default function GeneratorPage() {
     if (params.get("d")) setDirection(params.get("d")!);
     if (params.get("wa")) setWorldWork(params.get("wa")!);
     if (params.get("wb")) setCharWork(params.get("wb")!);
-    if (params.get("ca")) setWorldChars(params.get("ca")!.split("\u30FB").filter(Boolean));
-    if (params.get("cb")) setCharChars(params.get("cb")!.split("\u30FB").filter(Boolean));
+    if (params.get("ca")) setWorldChars(params.get("ca")!.split("・").filter(Boolean));
+    if (params.get("cb")) setCharChars(params.get("cb")!.split("・").filter(Boolean));
     if (params.get("dt")) setDetail(params.get("dt")!);
   }, []);
 
-  const world = worldChars.length > 0 ? `${worldWork}\uFF08${worldChars.join("\u30FB")}\uFF09` : worldWork;
-  const character = charChars.length > 0 ? `${charWork}\u306E${charChars.join("\u30FB")}` : charWork;
+  const world = worldChars.length > 0 ? `${worldWork}（${worldChars.join("・")}）` : worldWork;
+  const character = charChars.length > 0 ? `${charWork}の${charChars.join("・")}` : charWork;
   const canGenerate = direction.trim() && worldWork.trim() && charWork.trim();
 
   // Top combos for ranking
@@ -293,7 +293,7 @@ export default function GeneratorPage() {
 
   // --- Feature 5: Track combo stats ---
   const trackCombo = () => {
-    const key = `${worldWork} \u00D7 ${charWork}`;
+    const key = `${worldWork} × ${charWork}`;
     const stats = { ...comboStats };
     stats[key] = (stats[key] || 0) + 1;
     setComboStats(stats);
@@ -325,7 +325,7 @@ export default function GeneratorPage() {
         setPrompt(data.prompt);
       }
     } catch {
-      setError("\u901A\u4FE1\u30A8\u30E9\u30FC\u304C\u767A\u751F\u3057\u307E\u3057\u305F");
+      setError("通信エラーが発生しました");
     }
   };
 
@@ -377,8 +377,8 @@ export default function GeneratorPage() {
     if (direction) params.set("d", direction);
     if (worldWork) params.set("wa", worldWork);
     if (charWork) params.set("wb", charWork);
-    if (worldChars.length > 0) params.set("ca", worldChars.join("\u30FB"));
-    if (charChars.length > 0) params.set("cb", charChars.join("\u30FB"));
+    if (worldChars.length > 0) params.set("ca", worldChars.join("・"));
+    if (charChars.length > 0) params.set("cb", charChars.join("・"));
     if (detail) params.set("dt", detail);
     const url = `${window.location.origin}?${params.toString()}`;
     copyText(url, "share");
@@ -398,10 +398,10 @@ export default function GeneratorPage() {
       if (parsed.prompt_full) {
         setExtractedPromptFull(parsed.prompt_full);
       } else {
-        setJsonError("prompt_full \u30D5\u30A3\u30FC\u30EB\u30C9\u304C\u898B\u3064\u304B\u308A\u307E\u305B\u3093");
+        setJsonError("prompt_full フィールドが見つかりません");
       }
     } catch {
-      setJsonError("JSON\u306E\u89E3\u6790\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002AI\u306E\u8FD4\u7B54\u3092\u305D\u306E\u307E\u307E\u8CBC\u308A\u4ED8\u3051\u3066\u304F\u3060\u3055\u3044\u3002");
+      setJsonError("JSONの解析に失敗しました。AIの返答をそのまま貼り付けてください。");
     }
   };
 
@@ -411,25 +411,25 @@ export default function GeneratorPage() {
       <section className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-bold">4\u30B3\u30DE\u6F2B\u753B\u30D7\u30ED\u30F3\u30D7\u30C8\u751F\u6210</h2>
+            <h2 className="text-xl font-bold">4コマ漫画プロンプト生成</h2>
             <p className="text-sm text-gray-500 mt-1">
-              \u30AF\u30ED\u30B9\u30AA\u30FC\u30D0\u30FC4\u30B3\u30DE\u6F2B\u753B\u306E\u753B\u50CF\u751F\u6210\u30D7\u30ED\u30F3\u30D7\u30C8\u3092\u4F5C\u6210\u3057\u307E\u3059\u3002AI\u306B\u8CBC\u308A\u4ED8\u3051\u3066\u305D\u306E\u307E\u307E\u753B\u50CF\u751F\u6210\u3067\u304D\u307E\u3059\u3002
+              クロスオーバー4コマ漫画の画像生成プロンプトを作成します。AIに貼り付けてそのまま画像生成できます。
             </p>
           </div>
           {/* Feature 2: Random Button */}
           <button
             onClick={handleRandom}
             className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-sm font-medium transition-colors shrink-0"
-            title="\u65B9\u5411\u6027\u30FB\u4F5C\u54C1A\u30FB\u4F5C\u54C1B\u3092\u30E9\u30F3\u30C0\u30E0\u3067\u9078\u3076"
+            title="方向性・作品A・作品Bをランダムで選ぶ"
           >
-            \uD83C\uDFB2 \u30AC\u30C1\u30E3
+            {"🎲 ガチャ"}
           </button>
         </div>
 
         {/* Direction Presets */}
         <div>
           <label className="block text-sm font-medium text-gray-400 mb-2">
-            \u65B9\u5411\u6027\uFF08\u30C6\u30FC\u30DE\u30FB\u30C8\u30FC\u30F3\uFF09
+            方向性（テーマ・トーン）
           </label>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2">
             {DIRECTION_PRESETS.map((p) => {
@@ -452,7 +452,7 @@ export default function GeneratorPage() {
                   }`}
                 >
                   <div>{p.label}</div>
-                  <div className="text-xs opacity-60 mt-0.5">{example.workA} \u00D7 {example.workB}</div>
+                  <div className="text-xs opacity-60 mt-0.5">{example.workA} × {example.workB}</div>
                 </button>
               );
             })}
@@ -461,7 +461,7 @@ export default function GeneratorPage() {
             type="text"
             value={direction}
             onChange={(e) => setDirection(e.target.value)}
-            placeholder="\u30D7\u30EA\u30BB\u30C3\u30C8\u3092\u9078\u3076\u304B\u3001\u81EA\u7531\u5165\u529B"
+            placeholder="プリセットを選ぶか、自由入力"
             className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
@@ -469,13 +469,13 @@ export default function GeneratorPage() {
         {/* World & Character with Swap Button */}
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto_1fr] gap-4 items-start">
           <WorkSelector
-            label="\u4F5C\u54C1A\uFF08\u4E16\u754C\u89B3\u30FB\u821E\u53F0\uFF09"
+            label="作品A（世界観・舞台）"
             value={worldWork}
             onChange={setWorldWork}
             characterValues={worldChars}
             onCharacterChange={setWorldChars}
-            placeholder="\u4F5C\u54C1\u540D\u3092\u9078\u629E or \u5165\u529B"
-            characterPlaceholder="\u30AD\u30E3\u30E9\u6307\u5B9A\uFF08\u8907\u6570\u53EF\u30FB\u300C\u30FB\u300D\u533A\u5207\u308A\uFF09"
+            placeholder="作品名を選択 or 入力"
+            characterPlaceholder="キャラ指定（複数可・「・」区切り）"
           />
 
           {/* Feature 1: Swap Button */}
@@ -483,7 +483,7 @@ export default function GeneratorPage() {
             <button
               onClick={handleSwap}
               className="p-3 bg-gray-800 hover:bg-gray-700 rounded-full transition-colors border border-gray-700 hover:border-gray-500"
-              title="A\u2194B \u5165\u308C\u66FF\u3048"
+              title="A↔B 入れ替え"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-300">
                 <path d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4" />
@@ -492,26 +492,26 @@ export default function GeneratorPage() {
           </div>
 
           <WorkSelector
-            label="\u4F5C\u54C1B\uFF08\u8FF7\u3044\u8FBC\u3080\u30AD\u30E3\u30E9\uFF09"
+            label="作品B（迷い込むキャラ）"
             value={charWork}
             onChange={setCharWork}
             characterValues={charChars}
             onCharacterChange={setCharChars}
-            placeholder="\u4F5C\u54C1\u540D\u3092\u9078\u629E or \u5165\u529B"
-            characterPlaceholder="\u30AD\u30E3\u30E9\u6307\u5B9A\uFF08\u8907\u6570\u53EF\u30FB\u300C\u30FB\u300D\u533A\u5207\u308A\uFF09"
+            placeholder="作品名を選択 or 入力"
+            characterPlaceholder="キャラ指定（複数可・「・」区切り）"
           />
         </div>
 
         {/* Feature 5: Popular Combos Ranking */}
         {topCombos.length > 0 && (
           <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-3">
-            <h3 className="text-xs font-medium text-gray-500 mb-2">\uD83D\uDD25 \u3088\u304F\u4F7F\u3046\u30B3\u30F3\u30DC</h3>
+            <h3 className="text-xs font-medium text-gray-500 mb-2">{"🔥 よく使うコンボ"}</h3>
             <div className="flex flex-wrap gap-1.5">
               {topCombos.map(([combo, count], i) => (
                 <button
                   key={combo}
                   onClick={() => {
-                    const [a, b] = combo.split(" \u00D7 ");
+                    const [a, b] = combo.split(" × ");
                     if (a && b) {
                       setWorldWork(a.trim());
                       setWorldChars([]);
@@ -521,7 +521,7 @@ export default function GeneratorPage() {
                   }}
                   className="px-2 py-1 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded text-xs text-gray-300 transition-colors flex items-center gap-1.5"
                 >
-                  <span className="text-yellow-500">{i === 0 ? "\uD83E\uDD47" : i === 1 ? "\uD83E\uDD48" : i === 2 ? "\uD83E\uDD49" : `${i + 1}.`}</span>
+                  <span className="text-yellow-500">{i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}.`}</span>
                   <span>{combo}</span>
                   <span className="text-gray-600">({count})</span>
                 </button>
@@ -533,12 +533,12 @@ export default function GeneratorPage() {
         {/* Detail */}
         <div>
           <label className="block text-sm font-medium text-gray-400 mb-1">
-            \u5177\u4F53\u7684\u306A\u8981\u671B\u30FB\u30A4\u30E1\u30FC\u30B8\uFF08\u4EFB\u610F\uFF09
+            具体的な要望・イメージ（任意）
           </label>
           <textarea
             value={detail}
             onChange={(e) => setDetail(e.target.value)}
-            placeholder='\u4F8B: \u305F\u306C\u304D\u3061\u5546\u5E97\u3067\u30ED\u30FC\u30F3\u3092\u7D44\u307E\u3055\u308C\u308B\u3002\u300C\u5929\u4E0B\u306E\u5927\u5C06\u8ECD\u3067\u3059\u3088\u300D\u300C\u30F3\u30A9\u30D5\u30A5\u30C3\u300D'
+            placeholder={'例: たぬきち商店でローンを組まされる。「天下の大将軍ですよ」「ンォフゥッ」'}
             rows={3}
             className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
           />
@@ -551,7 +551,7 @@ export default function GeneratorPage() {
             disabled={!canGenerate}
             className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-medium transition-colors"
           >
-            4\u30B3\u30DE\u30D7\u30ED\u30F3\u30D7\u30C8\u3092\u751F\u6210
+            4コマプロンプトを生成
           </button>
           {/* Feature 6: Share URL */}
           {canGenerate && (
@@ -562,9 +562,9 @@ export default function GeneratorPage() {
                   ? "bg-green-600 text-white"
                   : "bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700"
               }`}
-              title="\u3053\u306E\u7D44\u307F\u5408\u308F\u305B\u3092URL\u3067\u5171\u6709"
+              title="この組み合わせをURLで共有"
             >
-              {copiedField === "share" ? "\u2705 URL\u30B3\u30D4\u30FC!" : "\uD83D\uDD17 \u5171\u6709"}
+              {copiedField === "share" ? "✅ URLコピー!" : "🔗 共有"}
             </button>
           )}
         </div>
@@ -580,7 +580,7 @@ export default function GeneratorPage() {
       {prompt && (
         <section className="space-y-4">
           <div className="flex items-center justify-between gap-2 flex-wrap">
-            <h2 className="text-xl font-bold">\u751F\u6210\u7D50\u679C</h2>
+            <h2 className="text-xl font-bold">生成結果</h2>
             <div className="flex gap-2">
               {/* Feature 4: Favorite Button */}
               <button
@@ -591,7 +591,7 @@ export default function GeneratorPage() {
                     : "bg-gray-800 hover:bg-gray-700 text-yellow-400 border border-gray-700"
                 }`}
               >
-                {copiedField === "favorited" ? "\u2B50 \u4FDD\u5B58\u3057\u307E\u3057\u305F!" : "\u2606 \u304A\u6C17\u306B\u5165\u308A"}
+                {copiedField === "favorited" ? "⭐ 保存しました!" : "☆ お気に入り"}
               </button>
               <button
                 onClick={saveToHistory}
@@ -601,7 +601,7 @@ export default function GeneratorPage() {
                     : "bg-gray-800 hover:bg-gray-700 text-gray-300"
                 }`}
               >
-                {copiedField === "saved" ? "\u4FDD\u5B58\u3057\u307E\u3057\u305F!" : "\u5C65\u6B74\u306B\u4FDD\u5B58"}
+                {copiedField === "saved" ? "保存しました!" : "履歴に保存"}
               </button>
             </div>
           </div>
@@ -610,7 +610,7 @@ export default function GeneratorPage() {
           <div className="bg-gray-900 rounded-xl border-2 border-blue-600 p-4">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-bold text-blue-400">
-                AI\u306B\u6E21\u3059\u30D7\u30ED\u30F3\u30D7\u30C8\uFF08\u5168\u6587\uFF09
+                AIに渡すプロンプト（全文）
               </h3>
               <button
                 onClick={() => copyText(prompt, "full")}
@@ -620,7 +620,7 @@ export default function GeneratorPage() {
                     : "bg-blue-600 hover:bg-blue-700 text-white"
                 }`}
               >
-                {copiedField === "full" ? "Copied!" : "Gemini\u306B\u30B3\u30D4\u30FC"}
+                {copiedField === "full" ? "Copied!" : "Geminiにコピー"}
               </button>
             </div>
             <pre className="text-sm text-gray-200 whitespace-pre-wrap leading-relaxed bg-gray-800 rounded-lg p-4 max-h-80 overflow-y-auto">
@@ -630,12 +630,12 @@ export default function GeneratorPage() {
 
           {/* Usage Guide */}
           <div className="bg-blue-900/20 border border-blue-800/50 rounded-xl p-4">
-            <h3 className="text-sm font-medium text-blue-300 mb-2">\u4F7F\u3044\u65B9</h3>
+            <h3 className="text-sm font-medium text-blue-300 mb-2">使い方</h3>
             <ol className="text-sm text-blue-200/80 space-y-1 list-decimal list-inside">
-              <li>\u4E0A\u306E\u30D7\u30ED\u30F3\u30D7\u30C8\u3092\u300CGemini\u306B\u30B3\u30D4\u30FC\u300D\u30DC\u30BF\u30F3\u3067\u30B3\u30D4\u30FC</li>
-              <li>ChatGPT / Gemini / Claude \u306B\u8CBC\u308A\u4ED8\u3051\u3066\u9001\u4FE1</li>
-              <li>AI\u304CJSON\u5F62\u5F0F\u30674\u30B3\u30DE\u6F2B\u753B\u306E\u8A73\u7D30\u8A2D\u5B9A\u3092\u8FD4\u3057\u307E\u3059</li>
-              <li>\u8FD4\u3063\u3066\u304D\u305FJSON\u3092\u4E0B\u306E\u300Cprompt_full\u62BD\u51FA\u300D\u306B\u8CBC\u308A\u4ED8\u3051\u2192Gemini\u753B\u50CF\u751F\u6210\u3078</li>
+              <li>上のプロンプトを「Geminiにコピー」ボタンでコピー</li>
+              <li>ChatGPT / Gemini / Claude に貼り付けて送信</li>
+              <li>AIがJSON形式で4コマ漫画の詳細設定を返します</li>
+              <li>返ってきたJSONを下の「prompt_full抽出」に貼り付け → Gemini画像生成へ</li>
             </ol>
           </div>
 
@@ -646,20 +646,20 @@ export default function GeneratorPage() {
               className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-800/50 transition-colors text-left"
             >
               <h3 className="text-sm font-bold text-purple-400">
-                \uD83D\uDD27 prompt_full \u62BD\u51FA\u30C4\u30FC\u30EB\uFF08AI\u306E\u8FD4\u7B54\u3092\u8CBC\u308A\u4ED8\u3051\uFF09
+                {"🔧 prompt_full 抽出ツール（AIの返答を貼り付け）"}
               </h3>
-              <span className="text-gray-500">{showJsonParser ? "\u25B2" : "\u25BC"}</span>
+              <span className="text-gray-500">{showJsonParser ? "▲" : "▼"}</span>
             </button>
 
             {showJsonParser && (
               <div className="px-4 pb-4 space-y-3 border-t border-gray-800 pt-3">
                 <p className="text-xs text-gray-500">
-                  AI\u304C\u8FD4\u3057\u305FJSON\u3092\u305D\u306E\u307E\u307E\u8CBC\u308A\u4ED8\u3051\u308B\u3068\u3001prompt_full \u3060\u3051\u3092\u62BD\u51FA\u3057\u307E\u3059\u3002
+                  AIが返したJSONをそのまま貼り付けると、prompt_full だけを抽出します。
                 </p>
                 <textarea
                   value={jsonInput}
                   onChange={(e) => setJsonInput(e.target.value)}
-                  placeholder='AI\u306E\u8FD4\u7B54\u3092\u3053\u3053\u306B\u8CBC\u308A\u4ED8\u3051\u2026\u000A\u000A\u4F8B: {"main_title": "...", "prompt_full": "...", ...}'
+                  placeholder={'AIの返答をここに貼り付け…\n\n例: {"main_title": "...", "prompt_full": "...", ...}'}
                   rows={5}
                   className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 resize-y font-mono"
                 />
@@ -668,7 +668,7 @@ export default function GeneratorPage() {
                   disabled={!jsonInput.trim()}
                   className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-sm font-medium transition-colors"
                 >
-                  prompt_full \u3092\u62BD\u51FA
+                  prompt_full を抽出
                 </button>
 
                 {jsonError && (
@@ -680,7 +680,7 @@ export default function GeneratorPage() {
                 {extractedPromptFull && (
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-green-400">\u2705 prompt_full \u62BD\u51FA\u6210\u529F!</span>
+                      <span className="text-sm font-medium text-green-400">✅ prompt_full 抽出成功!</span>
                       <button
                         onClick={() => copyText(extractedPromptFull, "prompt_full")}
                         className={`px-5 py-2 rounded-lg text-sm font-bold transition-colors ${
@@ -689,7 +689,7 @@ export default function GeneratorPage() {
                             : "bg-purple-600 hover:bg-purple-700 text-white"
                         }`}
                       >
-                        {copiedField === "prompt_full" ? "Copied!" : "Gemini\u753B\u50CF\u751F\u6210\u306B\u30B3\u30D4\u30FC"}
+                        {copiedField === "prompt_full" ? "Copied!" : "Gemini画像生成にコピー"}
                       </button>
                     </div>
                     <pre className="text-xs text-gray-300 whitespace-pre-wrap bg-gray-800 rounded-lg p-3 max-h-60 overflow-y-auto leading-relaxed">
