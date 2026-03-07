@@ -760,7 +760,30 @@ export default function GeneratorPage() {
                   key={p.id}
                   onClick={() => {
                     setDirection(p.label);
-                    if (mode === "duo") {
+                    if (mode === "multi") {
+                      // マルチモード: プリセットの2作品 + ランダムで1作品追加
+                      const combo = p.combos[Math.floor(Math.random() * p.combos.length)];
+                      const used = new Set([combo.workA, combo.workB]);
+                      const extraWorks: string[] = [];
+                      for (let ei = 2; ei < multiWorks.length; ei++) {
+                        let pick = WORKS[Math.floor(Math.random() * WORKS.length)];
+                        let attempts = 0;
+                        while (used.has(pick.name) && attempts < 100) {
+                          pick = WORKS[Math.floor(Math.random() * WORKS.length)];
+                          attempts++;
+                        }
+                        used.add(pick.name);
+                        extraWorks.push(pick.name);
+                      }
+                      const allWorkNames = [combo.workA, combo.workB, ...extraWorks];
+                      setMultiWorks(multiWorks.map((w, i) => ({
+                        ...w,
+                        workName: allWorkNames[i] || "",
+                        characters: [],
+                        role: DEFAULT_ROLES[i] || "free" as CharacterRole,
+                        freeRoleText: "",
+                      })));
+                    } else {
                       const combo = p.combos[Math.floor(Math.random() * p.combos.length)];
                       setWorldWork(combo.workA);
                       setWorldChars([]);
