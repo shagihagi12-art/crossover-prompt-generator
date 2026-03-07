@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { GENRES, WORKS, filterByGenre } from "@/lib/works";
 import { CHARACTER_ROLES } from "@/lib/roles";
 import { buildMultiFullPrompt } from "@/lib/prompts-multi";
@@ -304,21 +304,14 @@ function WorkSelector({
 }) {
   const [genre, setGenre] = useState("全ジャンル");
   const [isOpen, setIsOpen] = useState(false);
-  const blurTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
   const filtered = useMemo(() => filterByGenre(genre), [genre]);
   const selectedWork = WORKS.find((w) => w.name === value);
 
   const handleSelect = (workName: string) => {
-    clearTimeout(blurTimeoutRef.current);
     onChange(workName);
     onCharacterChange([]);
     setIsOpen(false);
-  };
-
-  const openDropdown = () => {
-    clearTimeout(blurTimeoutRef.current);
-    setIsOpen(true);
   };
 
   return (
@@ -329,7 +322,11 @@ function WorkSelector({
           <button
             key={g}
             type="button"
-            onClick={() => { setGenre(g); openDropdown(); }}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              setGenre(g);
+              setIsOpen(true);
+            }}
             className={`px-2 py-0.5 rounded text-xs transition-colors ${
               genre === g
                 ? "bg-blue-600 text-white"
@@ -344,11 +341,9 @@ function WorkSelector({
         <input
           type="text"
           value={value}
-          onChange={(e) => { onChange(e.target.value); openDropdown(); }}
-          onFocus={() => openDropdown()}
-          onBlur={() => {
-            blurTimeoutRef.current = setTimeout(() => setIsOpen(false), 200);
-          }}
+          onChange={(e) => { onChange(e.target.value); setIsOpen(true); }}
+          onFocus={() => setIsOpen(true)}
+          onBlur={() => setIsOpen(false)}
           placeholder={placeholder}
           className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
@@ -362,7 +357,10 @@ function WorkSelector({
                 <button
                   key={w.name}
                   type="button"
-                  onClick={() => handleSelect(w.name)}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    handleSelect(w.name);
+                  }}
                   className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-700 transition-colors flex items-center justify-between ${
                     value === w.name ? "bg-blue-900/40 text-blue-300" : "text-gray-200"
                   }`}
