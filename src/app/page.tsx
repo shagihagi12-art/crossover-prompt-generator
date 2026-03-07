@@ -304,11 +304,15 @@ function WorkSelector({
 }) {
   const [genre, setGenre] = useState("全ジャンル");
   const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
 
   const filtered = useMemo(() => filterByGenre(genre), [genre]);
   const selectedWork = WORKS.find((w) => w.name === value);
+
+  const handleSelect = (workName: string) => {
+    onChange(workName);
+    onCharacterChange([]);
+    setIsOpen(false);
+  };
 
   return (
     <div className="space-y-2">
@@ -317,6 +321,7 @@ function WorkSelector({
         {GENRES.map((g) => (
           <button
             key={g}
+            type="button"
             onClick={() => { setGenre(g); setIsOpen(true); }}
             className={`px-2 py-0.5 rounded text-xs transition-colors ${
               genre === g
@@ -330,49 +335,45 @@ function WorkSelector({
       </div>
       <div className="relative">
         <input
-          ref={inputRef}
           type="text"
           value={value}
           onChange={(e) => { onChange(e.target.value); setIsOpen(true); }}
           onFocus={() => setIsOpen(true)}
-          onBlur={(e) => {
-            // ドロップダウン内のクリックならblurを無視
-            if (dropdownRef.current?.contains(e.relatedTarget as Node)) return;
-            setIsOpen(false);
-          }}
           placeholder={placeholder}
           className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         {isOpen && (
-          <div
-            ref={dropdownRef}
-            className="absolute z-50 mt-1 w-full max-h-48 overflow-y-auto bg-gray-800 border border-gray-700 rounded-lg shadow-xl"
-          >
-            {filtered
-              .filter((w) => !value || w.name.toLowerCase().includes(value.toLowerCase()))
-              .map((w) => (
-                <button
-                  key={w.name}
-                  type="button"
-                  tabIndex={-1}
-                  onClick={() => {
-                    onChange(w.name);
-                    onCharacterChange([]);
-                    setIsOpen(false);
-                    inputRef.current?.blur();
-                  }}
-                  className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-700 transition-colors flex items-center justify-between ${
-                    value === w.name ? "bg-blue-900/40 text-blue-300" : "text-gray-200"
-                  }`}
-                >
-                  <span>{w.name}</span>
-                  <span className="text-xs text-gray-500">{w.genre}</span>
-                </button>
-              ))}
-            {filtered.filter((w) => !value || w.name.toLowerCase().includes(value.toLowerCase())).length === 0 && (
-              <div className="px-3 py-2 text-sm text-gray-500">該当なし（自由入力OK）</div>
-            )}
-          </div>
+          <>
+            {/* 背景オーバーレイ: ドロップダウン外クリックで閉じる */}
+            <div
+              className="fixed inset-0 z-40"
+              onClick={() => setIsOpen(false)}
+            />
+            {/* ドロップダウンメニュー */}
+            <div
+              className="absolute z-50 mt-1 w-full max-h-48 overflow-y-auto bg-gray-800 border border-gray-700 rounded-lg shadow-xl"
+              onMouseDown={(e) => e.preventDefault()}
+            >
+              {filtered
+                .filter((w) => !value || w.name.toLowerCase().includes(value.toLowerCase()))
+                .map((w) => (
+                  <button
+                    key={w.name}
+                    type="button"
+                    onClick={() => handleSelect(w.name)}
+                    className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-700 transition-colors flex items-center justify-between ${
+                      value === w.name ? "bg-blue-900/40 text-blue-300" : "text-gray-200"
+                    }`}
+                  >
+                    <span>{w.name}</span>
+                    <span className="text-xs text-gray-500">{w.genre}</span>
+                  </button>
+                ))}
+              {filtered.filter((w) => !value || w.name.toLowerCase().includes(value.toLowerCase())).length === 0 && (
+                <div className="px-3 py-2 text-sm text-gray-500">該当なし（自由入力OK）</div>
+              )}
+            </div>
+          </>
         )}
       </div>
       {selectedWork && selectedWork.characters.length > 0 && (
@@ -380,6 +381,7 @@ function WorkSelector({
           {selectedWork.characters.map((c) => (
             <button
               key={c}
+              type="button"
               onClick={() => {
                 if (characterValues.includes(c)) {
                   onCharacterChange(characterValues.filter((v) => v !== c));
