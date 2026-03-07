@@ -424,7 +424,12 @@ function WorkSelector({
   );
 }
 
-const DEFAULT_ROLES: CharacterRole[] = ["protagonist", "tsukkomi", "boke", "makikomare", "troublemaker", "observer"];
+const DEFAULT_ROLES: CharacterRole[] = [
+  "protagonist", "tsukkomi", "boke", "rival",
+  "makikomare", "troublemaker", "observer",
+  "heroine", "villain", "mentor", "mascot",
+  "mastermind", "victim", "wildcard", "guide",
+];
 
 export default function GeneratorPage() {
   const [mode, setMode] = useState<"duo" | "multi">("duo");
@@ -460,7 +465,6 @@ export default function GeneratorPage() {
   ]);
 
   const addMultiWork = () => {
-    if (multiWorks.length >= 6) return;
     const nextRole = DEFAULT_ROLES[multiWorks.length] || "free";
     setMultiWorks([...multiWorks, { workName: "", characters: [], role: nextRole, freeRoleText: "" }]);
   };
@@ -488,7 +492,7 @@ export default function GeneratorPage() {
       if (params.get("d")) setDirection(params.get("d")!);
       if (params.get("dt")) setDetail(params.get("dt")!);
       const works: typeof multiWorks = [];
-      for (let i = 1; i <= 6; i++) {
+      for (let i = 1; ; i++) {
         const w = params.get(`w${i}`);
         if (!w) break;
         works.push({
@@ -766,7 +770,7 @@ export default function GeneratorPage() {
                 : "bg-gray-900 text-gray-400 hover:bg-gray-800"
             }`}
           >
-            マルチ作品（3-6作品）
+            マルチ作品（3作品〜）
           </button>
         </div>
 
@@ -921,14 +925,12 @@ export default function GeneratorPage() {
                 </div>
               </div>
             ))}
-            {multiWorks.length < 6 && (
-              <button
-                onClick={addMultiWork}
-                className="w-full py-3 border-2 border-dashed border-gray-700 hover:border-purple-500 rounded-xl text-sm text-gray-500 hover:text-purple-400 transition-colors"
-              >
-                + 作品を追加（{multiWorks.length}/6）
-              </button>
-            )}
+            <button
+              onClick={addMultiWork}
+              className="w-full py-3 border-2 border-dashed border-gray-700 hover:border-purple-500 rounded-xl text-sm text-gray-500 hover:text-purple-400 transition-colors"
+            >
+              + 作品を追加（現在{multiWorks.length}作品）
+            </button>
           </div>
         )}
 

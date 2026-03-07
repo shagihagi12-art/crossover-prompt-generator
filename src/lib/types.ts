@@ -44,6 +44,13 @@ export type CharacterRole =
   | "guide"
   | "troublemaker"
   | "observer"
+  | "heroine"
+  | "villain"
+  | "mentor"
+  | "mascot"
+  | "mastermind"
+  | "victim"
+  | "wildcard"
   | "free";
 
 export interface MultiWork {
