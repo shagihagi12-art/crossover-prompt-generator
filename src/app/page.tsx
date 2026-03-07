@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { GENRES, WORKS, filterByGenre } from "@/lib/works";
 import { CHARACTER_ROLES } from "@/lib/roles";
 import { buildMultiFullPrompt } from "@/lib/prompts-multi";
@@ -304,31 +304,14 @@ function WorkSelector({
 }) {
   const [genre, setGenre] = useState("全ジャンル");
   const [isOpen, setIsOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const filtered = useMemo(() => filterByGenre(genre), [genre]);
   const selectedWork = WORKS.find((w) => w.name === value);
 
-  // Click outside to close dropdown
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [isOpen]);
-
-  const handleSelect = useCallback((workName: string) => {
-    onChange(workName);
-    onCharacterChange([]);
-    setIsOpen(false);
-  }, [onChange, onCharacterChange]);
-
   return (
-    <div className="space-y-2" ref={containerRef}>
+    <div className="space-y-2">
       <label className="block text-sm font-medium text-gray-400">{label}</label>
       <div className="flex flex-wrap gap-1">
         {GENRES.map((g) => (
@@ -347,21 +330,37 @@ function WorkSelector({
       </div>
       <div className="relative">
         <input
+          ref={inputRef}
           type="text"
           value={value}
           onChange={(e) => { onChange(e.target.value); setIsOpen(true); }}
           onFocus={() => setIsOpen(true)}
+          onBlur={(e) => {
+            // ドロップダウン内のクリックならblurを無視
+            if (dropdownRef.current?.contains(e.relatedTarget as Node)) return;
+            setIsOpen(false);
+          }}
           placeholder={placeholder}
           className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         {isOpen && (
-          <div className="absolute z-50 mt-1 w-full max-h-48 overflow-y-auto bg-gray-800 border border-gray-700 rounded-lg shadow-xl">
+          <div
+            ref={dropdownRef}
+            className="absolute z-50 mt-1 w-full max-h-48 overflow-y-auto bg-gray-800 border border-gray-700 rounded-lg shadow-xl"
+          >
             {filtered
               .filter((w) => !value || w.name.toLowerCase().includes(value.toLowerCase()))
               .map((w) => (
                 <button
                   key={w.name}
-                  onMouseDown={(e) => { e.preventDefault(); handleSelect(w.name); }}
+                  type="button"
+                  tabIndex={-1}
+                  onClick={() => {
+                    onChange(w.name);
+                    onCharacterChange([]);
+                    setIsOpen(false);
+                    inputRef.current?.blur();
+                  }}
                   className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-700 transition-colors flex items-center justify-between ${
                     value === w.name ? "bg-blue-900/40 text-blue-300" : "text-gray-200"
                   }`}
