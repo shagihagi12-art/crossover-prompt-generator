@@ -1,1 +1,39 @@
 @import "tailwindcss";
+
+/* セリフパネル用アニメーション */
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-2deg); }
+  75% { transform: rotate(2deg); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
+  20%, 40%, 60%, 80% { transform: translateX(2px); }
+}
+
+@keyframes eva-glow {
+  0%, 100% { text-shadow: 0 0 4px rgba(224,64,251,0.3); }
+  50% { text-shadow: 0 0 12px rgba(224,64,251,0.6); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-wiggle { animation: wiggle 0.5s ease-in-out; }
+.animate-shake { animation: shake 0.3s ease-in-out; }
+.animate-eva-glow { animation: eva-glow 2s ease-in-out infinite; }
+.animate-fadeIn { animation: fadeIn 0.4s ease-out; }
+
+/* アクセシビリティ: モーション軽減 */
+@media (prefers-reduced-motion: reduce) {
+  .animate-wiggle,
+  .animate-shake,
+  .animate-eva-glow,
+  .animate-fadeIn {
+    animation: none !important;
+  }
+}

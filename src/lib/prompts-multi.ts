@@ -1,4 +1,4 @@
-import type { MultiGenerateInput, MultiWork } from "./types";
+import type { MultiGenerateInput, MultiWork, CharacterProfile } from "./types";
 import { getRolePromptEn, getRoleLabel } from "./roles";
 
 export const SYSTEM_PROMPT_MULTI = `あなたはアニメ・漫画・ゲームのマルチ作品クロスオーバー4コマ漫画の画像生成プロンプトを作成する専門家です。
@@ -102,12 +102,47 @@ A single vertical strip of EXACTLY 4 panels arranged in ONE column from top to b
       "number": 1,
       "beat": "起",
       "description": "コマ1の描写",
-      "dialogue": [{"character": "キャラ名", "line": "セリフ", "emotion": "表情"}]
+      "dialogue": [
+        {
+          "character": "キャラ名",
+          "line": "セリフ",
+          "emotion": "表情",
+          "emotionIntensity": 7,
+          "speechStyle": "normal",
+          "reactionTo": null,
+          "visualDirection": "汗マークを浮かべて"
+        }
+      ],
+      "visualDirection": "パネル全体の構図指示（任意）"
     }
   ],
   "style_mix": "画風ミックスの指定（N作品分の画風の混在を記載）",
-  "visual_effects": ["効果音やリアクション記号のリスト"]
-}`;
+  "visual_effects": ["効果音やリアクション記号のリスト"],
+  "geminiImagePrompt": "prompt_fullの要約版（任意）",
+  "endingCaption": "締め一言（例: つづかない）"
+}
+
+### dialogue の追加フィールド説明（全てoptional）:
+- emotionIntensity: 感情の強度 0-10
+- speechStyle: "normal" | "shout" | "whisper" | "mumble" | "dramatic" | "comedic" | "inner"
+- reactionTo: 誰/何へのリアクションか（null=独白）
+- visualDirection: このセリフの絵的な演出指示
+
+## ★ セリフ品質チェックリスト
+1. そのキャラの一人称は正しいか？
+2. 語尾・口癖はキャラらしいか？
+3. 異なるキャラが同じ口調になっていないか？
+4. キャラ固有の名セリフや決め台詞を活用しているか？
+5. 感情表現はキャラの性格に一致しているか？`;
+
+/** キャラプロフィールをプロンプト用テキストに変換 */
+function formatCharacterProfile(p: CharacterProfile): string {
+  return `  ▸ ${p.name}（${p.nameEn}）
+    性格: ${p.personalityTraits.join("、")}
+    ビジュアル: ${p.visual.description}
+    ちびキャラ: ${p.visual.chibiTraits}
+    口調: ${p.speech.speechInstructions}`;
+}
 
 function buildWorkDescription(work: MultiWork, index: number): string {
   const roleLabel = getRoleLabel(work.role);
@@ -116,9 +151,19 @@ function buildWorkDescription(work: MultiWork, index: number): string {
     ? work.characters.join("・")
     : "（キャラ指定なし＝作品の代表キャラ）";
 
-  return `【作品${index + 1}】${work.workName}
+  let desc = `【作品${index + 1}】${work.workName}
   キャラクター: ${chars}
   役割: ${roleLabel}（${roleEn}）`;
+
+  // キャラプロフィール注入
+  if (work.characterProfiles && work.characterProfiles.length > 0) {
+    desc += "\n  ★口調・外見ガイド（必ず従うこと）:";
+    for (const p of work.characterProfiles) {
+      desc += "\n" + formatCharacterProfile(p);
+    }
+  }
+
+  return desc;
 }
 
 export function buildMultiUserPrompt(input: MultiGenerateInput): string {

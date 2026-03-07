@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useMemo, useEffect, useRef } from "react";
-import { GENRES, WORKS, filterByGenre } from "@/lib/works";
+import { GENRES, WORKS, filterByGenre, hasCharacterDb } from "@/lib/works";
 import { CHARACTER_ROLES } from "@/lib/roles";
 import { buildMultiFullPrompt } from "@/lib/prompts-multi";
+import { getCharacterProfile } from "@/data/characters";
+import DialoguePanel from "@/components/DialoguePanel";
 import type { CharacterRole, MultiWork } from "@/lib/types";
 
 const DIRECTION_PRESETS = [
@@ -384,26 +386,33 @@ function WorkSelector({
       </div>
       {selectedWork && selectedWork.characters.length > 0 && (
         <div className="flex flex-wrap gap-1 mt-1">
-          {selectedWork.characters.map((c) => (
-            <button
-              key={c}
-              type="button"
-              onClick={() => {
-                if (characterValues.includes(c)) {
-                  onCharacterChange(characterValues.filter((v) => v !== c));
-                } else {
-                  onCharacterChange([...characterValues, c]);
-                }
-              }}
-              className={`px-2 py-1 rounded text-xs transition-colors border ${
-                characterValues.includes(c)
-                  ? "bg-blue-600 border-blue-500 text-white"
-                  : "bg-gray-900 border-gray-700 text-gray-400 hover:border-gray-500"
-              }`}
-            >
-              {c}
-            </button>
-          ))}
+          {selectedWork.characters.map((c) => {
+            const hasDb = hasCharacterDb(value) && !!getCharacterProfile(c, value);
+            return (
+              <button
+                key={c}
+                type="button"
+                onClick={() => {
+                  if (characterValues.includes(c)) {
+                    onCharacterChange(characterValues.filter((v) => v !== c));
+                  } else {
+                    onCharacterChange([...characterValues, c]);
+                  }
+                }}
+                className={`px-2 py-1 rounded text-xs transition-colors border ${
+                  characterValues.includes(c)
+                    ? "bg-blue-600 border-blue-500 text-white"
+                    : "bg-gray-900 border-gray-700 text-gray-400 hover:border-gray-500"
+                }`}
+                title={hasDb ? "キャラDB登録済み（口調・外見データあり）" : undefined}
+              >
+                {hasDb && <span className="text-yellow-400 mr-0.5">★</span>}{c}
+              </button>
+            );
+          })}
+          {hasCharacterDb(value) && (
+            <span className="text-xs text-yellow-400/70 self-center ml-1">★=口調DB対応</span>
+          )}
         </div>
       )}
       <input
@@ -446,6 +455,8 @@ export default function GeneratorPage() {
   // JSON parser state
   const [jsonInput, setJsonInput] = useState("");
   const [extractedPromptFull, setExtractedPromptFull] = useState<string | null>(null);
+  const [parsedPanels, setParsedPanels] = useState<import("@/lib/types").EnhancedPanel[] | null>(null);
+  const [parsedEndingCaption, setParsedEndingCaption] = useState<string | null>(null);
   const [jsonError, setJsonError] = useState<string | null>(null);
   const [showJsonParser, setShowJsonParser] = useState(false);
 
@@ -584,12 +595,19 @@ export default function GeneratorPage() {
       try {
         const works: MultiWork[] = multiWorks
           .filter((w) => w.workName.trim())
-          .map((w) => ({
-            workName: w.workName.trim(),
-            characters: w.characters,
-            role: w.role,
-            freeRoleText: w.freeRoleText || undefined,
-          }));
+          .map((w) => {
+            // キャラプロフィール解決
+            const profiles = w.characters
+              .map((charName) => getCharacterProfile(charName, w.workName.trim()))
+              .filter((p): p is NonNullable<typeof p> => !!p);
+            return {
+              workName: w.workName.trim(),
+              characters: w.characters,
+              role: w.role,
+              freeRoleText: w.freeRoleText || undefined,
+              characterProfiles: profiles.length > 0 ? profiles : undefined,
+            };
+          });
         const result = buildMultiFullPrompt({
           direction: direction.trim(),
           works,
@@ -711,6 +729,8 @@ export default function GeneratorPage() {
   const handleParseJson = () => {
     setJsonError(null);
     setExtractedPromptFull(null);
+    setParsedPanels(null);
+    setParsedEndingCaption(null);
     try {
       let jsonStr = jsonInput.trim();
       // Remove markdown code blocks if present
@@ -722,6 +742,13 @@ export default function GeneratorPage() {
         setExtractedPromptFull(parsed.prompt_full);
       } else {
         setJsonError("prompt_full フィールドが見つかりません");
+      }
+      // パネルデータも抽出（後方互換: なくてもOK）
+      if (parsed.panels && Array.isArray(parsed.panels)) {
+        setParsedPanels(parsed.panels);
+      }
+      if (parsed.endingCaption) {
+        setParsedEndingCaption(parsed.endingCaption);
       }
     } catch {
       setJsonError("JSONの解析に失敗しました。AIの返答をそのまま貼り付けてください。");
@@ -1127,6 +1154,16 @@ export default function GeneratorPage() {
                     <pre className="text-xs text-gray-300 whitespace-pre-wrap bg-gray-800 rounded-lg p-3 max-h-60 overflow-y-auto leading-relaxed">
                       {extractedPromptFull}
                     </pre>
+                  </div>
+                )}
+
+                {/* セリフパネルUI */}
+                {parsedPanels && parsedPanels.length > 0 && (
+                  <div className="mt-4 border-t border-gray-700 pt-4">
+                    <DialoguePanel panels={parsedPanels} />
+                    {parsedEndingCaption && (
+                      <p className="text-center text-sm text-gray-400 mt-3 italic">— {parsedEndingCaption} —</p>
+                    )}
                   </div>
                 )}
               </div>

@@ -1,4 +1,4 @@
-import type { GenerateInput } from "./types";
+import type { GenerateInput, CharacterProfile } from "./types";
 
 export const SYSTEM_PROMPT = `あなたはアニメ・漫画・ゲームのクロスオーバー4コマ漫画の画像生成プロンプトを作成する専門家です。
 
@@ -99,16 +99,52 @@ Sound effect text: "効果音"
       "beat": "起",
       "description": "コマ1の視覚的描写（日本語）",
       "dialogue": [
-        {"character": "キャラ名", "line": "セリフ", "emotion": "表情"}
-      ]
-    },
-    {"number": 2, "beat": "承", "description": "...", "dialogue": [{"character": "...", "line": "...", "emotion": "..."}]},
-    {"number": 3, "beat": "転", "description": "...", "dialogue": [{"character": "...", "line": "...", "emotion": "..."}]},
-    {"number": 4, "beat": "結", "description": "...", "dialogue": [{"character": "...", "line": "...", "emotion": "..."}]}
+        {
+          "character": "キャラ名",
+          "line": "セリフ",
+          "emotion": "表情",
+          "emotionIntensity": 7,
+          "speechStyle": "normal",
+          "reactionTo": null,
+          "visualDirection": "汗マークを浮かべて後ずさり"
+        }
+      ],
+      "visualDirection": "パネル全体の構図・カメラアングルの指示（任意）"
+    }
   ],
   "style_mix": "画風ミックスの指定（作品Aの画風特徴 × 作品Bの画風特徴）",
-  "visual_effects": ["効果音やリアクション記号のリスト"]
-}`;
+  "visual_effects": ["効果音やリアクション記号のリスト"],
+  "geminiImagePrompt": "prompt_fullの要約版（Geminiに画像生成させる短縮プロンプト、任意）",
+  "endingCaption": "4コマの締め一言（例: つづかない）"
+}
+
+### dialogue の追加フィールド説明（全てoptional）:
+- emotionIntensity: 感情の強度 0-10（0=無表情、10=絶叫）
+- speechStyle: セリフの演出スタイル（"normal" | "shout" | "whisper" | "mumble" | "dramatic" | "comedic" | "inner"）
+- reactionTo: 誰/何へのリアクションか（null=独白）
+- visualDirection: このセリフの絵的な演出指示
+
+## ★ セリフ品質チェックリスト（AIは生成後にこれを自問すること）
+1. そのキャラの一人称は正しいか？（「オラ」「僕」「あたし」等）
+2. 語尾・口癖はキャラらしいか？（「〜だゾ」「〜なのよ」「〜でござる」等）
+3. 異なるキャラが同じ口調になっていないか？
+4. キャラクター固有の名セリフや決め台詞を活用しているか？
+5. 感情表現はキャラの性格に一致しているか？`;
+
+/** キャラプロフィールをプロンプト用テキストに変換 */
+function formatCharacterProfiles(profiles: CharacterProfile[]): string {
+  if (profiles.length === 0) return "";
+
+  const sections = profiles.map((p) => {
+    return `### ${p.name}（${p.nameEn}）
+- 性格: ${p.personalityTraits.join("、")}
+- ビジュアル: ${p.visual.description}
+- ちびキャラ: ${p.visual.chibiTraits}
+- 口調指示: ${p.speech.speechInstructions}`;
+  });
+
+  return `\n## ★ キャラクター口調・外見ガイド（必ず従うこと）\n以下のキャラは口調・一人称・語尾を厳密に守ってください。prompt_fullの外見描写にもビジュアル情報を使ってください。\n\n${sections.join("\n\n")}`;
+}
 
 export function buildUserPrompt(input: GenerateInput): string {
   const lines = [
@@ -121,6 +157,11 @@ export function buildUserPrompt(input: GenerateInput): string {
 
   if (input.detail) {
     lines.push(`【具体的な要望】${input.detail}`);
+  }
+
+  // キャラプロフィール注入
+  if (input.characterProfiles && input.characterProfiles.length > 0) {
+    lines.push(formatCharacterProfiles(input.characterProfiles));
   }
 
   lines.push(
