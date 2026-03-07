@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { GENRES, WORKS, filterByGenre } from "@/lib/works";
 import { CHARACTER_ROLES } from "@/lib/roles";
 import { buildMultiFullPrompt } from "@/lib/prompts-multi";
@@ -304,12 +304,31 @@ function WorkSelector({
 }) {
   const [genre, setGenre] = useState("全ジャンル");
   const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const filtered = useMemo(() => filterByGenre(genre), [genre]);
   const selectedWork = WORKS.find((w) => w.name === value);
 
+  // Click outside to close dropdown
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isOpen]);
+
+  const handleSelect = useCallback((workName: string) => {
+    onChange(workName);
+    onCharacterChange([]);
+    setIsOpen(false);
+  }, [onChange, onCharacterChange]);
+
   return (
-    <div className="space-y-2">
+    <div className="space-y-2" ref={containerRef}>
       <label className="block text-sm font-medium text-gray-400">{label}</label>
       <div className="flex flex-wrap gap-1">
         {GENRES.map((g) => (
@@ -336,28 +355,25 @@ function WorkSelector({
           className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         {isOpen && (
-          <>
-            <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
-            <div className="absolute z-20 mt-1 w-full max-h-48 overflow-y-auto bg-gray-800 border border-gray-700 rounded-lg shadow-xl">
-              {filtered
-                .filter((w) => !value || w.name.toLowerCase().includes(value.toLowerCase()))
-                .map((w) => (
-                  <button
-                    key={w.name}
-                    onClick={() => { onChange(w.name); onCharacterChange([]); setIsOpen(false); }}
-                    className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-700 transition-colors flex items-center justify-between ${
-                      value === w.name ? "bg-blue-900/40 text-blue-300" : "text-gray-200"
-                    }`}
-                  >
-                    <span>{w.name}</span>
-                    <span className="text-xs text-gray-500">{w.genre}</span>
-                  </button>
-                ))}
-              {filtered.filter((w) => !value || w.name.toLowerCase().includes(value.toLowerCase())).length === 0 && (
-                <div className="px-3 py-2 text-sm text-gray-500">該当なし（自由入力OK）</div>
-              )}
-            </div>
-          </>
+          <div className="absolute z-50 mt-1 w-full max-h-48 overflow-y-auto bg-gray-800 border border-gray-700 rounded-lg shadow-xl">
+            {filtered
+              .filter((w) => !value || w.name.toLowerCase().includes(value.toLowerCase()))
+              .map((w) => (
+                <button
+                  key={w.name}
+                  onMouseDown={(e) => { e.preventDefault(); handleSelect(w.name); }}
+                  className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-700 transition-colors flex items-center justify-between ${
+                    value === w.name ? "bg-blue-900/40 text-blue-300" : "text-gray-200"
+                  }`}
+                >
+                  <span>{w.name}</span>
+                  <span className="text-xs text-gray-500">{w.genre}</span>
+                </button>
+              ))}
+            {filtered.filter((w) => !value || w.name.toLowerCase().includes(value.toLowerCase())).length === 0 && (
+              <div className="px-3 py-2 text-sm text-gray-500">該当なし（自由入力OK）</div>
+            )}
+          </div>
         )}
       </div>
       {selectedWork && selectedWork.characters.length > 0 && (
