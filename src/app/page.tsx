@@ -448,7 +448,7 @@ export default function GeneratorPage() {
   };
 
   const updateMultiWork = (index: number, updates: Partial<typeof multiWorks[0]>) => {
-    setMultiWorks(multiWorks.map((w, i) => i === index ? { ...w, ...updates } : w));
+    setMultiWorks(prev => prev.map((w, i) => i === index ? { ...w, ...updates } : w));
   };
 
   // Load combo stats + URL params on mount
