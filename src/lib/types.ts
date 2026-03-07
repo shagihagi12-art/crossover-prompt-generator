@@ -33,3 +33,28 @@ export interface GenerateInput {
   character: string;
   detail?: string;
 }
+
+// マルチモード用
+export type CharacterRole =
+  | "protagonist"
+  | "tsukkomi"
+  | "boke"
+  | "rival"
+  | "makikomare"
+  | "guide"
+  | "troublemaker"
+  | "observer"
+  | "free";
+
+export interface MultiWork {
+  workName: string;
+  characters: string[];
+  role: CharacterRole;
+  freeRoleText?: string;
+}
+
+export interface MultiGenerateInput {
+  direction: string;
+  works: MultiWork[];
+  detail?: string;
+}

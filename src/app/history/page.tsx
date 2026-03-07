@@ -5,13 +5,36 @@ import { useState, useEffect } from "react";
 interface HistoryEntry {
   id: string;
   timestamp: string;
+  mode?: "duo" | "multi";
   input: {
     direction: string;
-    world: string;
-    character: string;
+    world?: string;
+    character?: string;
     detail?: string;
   };
+  works?: Array<{
+    workName: string;
+    characters: string[];
+    role: string;
+  }>;
   prompt: string;
+}
+
+function getEntryTitle(entry: HistoryEntry): string {
+  if (entry.mode === "multi" && entry.works && entry.works.length > 0) {
+    return entry.works.map((w) => w.workName).join(" × ");
+  }
+  if (entry.input.world && entry.input.character) {
+    return `${entry.input.world} × ${entry.input.character}`;
+  }
+  return entry.input.direction || "不明";
+}
+
+function getEntrySubtitle(entry: HistoryEntry): string {
+  if (entry.mode === "multi" && entry.works) {
+    return `${entry.works.length}作品マルチ`;
+  }
+  return "";
 }
 
 export default function HistoryPage() {
@@ -139,9 +162,14 @@ export default function HistoryPage() {
                 >
                   <div className="flex-1 min-w-0">
                     <h3 className="font-medium text-gray-100 truncate">
-                      {entry.input.world} × {entry.input.character}
+                      {getEntryTitle(entry)}
                     </h3>
                     <div className="flex items-center gap-3 mt-1">
+                      {getEntrySubtitle(entry) && (
+                        <span className="text-xs text-purple-400">
+                          {getEntrySubtitle(entry)}
+                        </span>
+                      )}
                       <span className="text-xs text-blue-400">
                         {entry.input.direction}
                       </span>

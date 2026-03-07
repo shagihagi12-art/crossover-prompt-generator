@@ -35,3 +35,5 @@ next-env.d.ts
 
 # output
 /output/
+.vercel
+.claude/
