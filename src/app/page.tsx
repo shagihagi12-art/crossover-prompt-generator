@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { GENRES, WORKS, filterByGenre } from "@/lib/works";
 import { CHARACTER_ROLES } from "@/lib/roles";
 import { buildMultiFullPrompt } from "@/lib/prompts-multi";
@@ -304,9 +304,22 @@ function WorkSelector({
 }) {
   const [genre, setGenre] = useState("全ジャンル");
   const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const filtered = useMemo(() => filterByGenre(genre), [genre]);
   const selectedWork = WORKS.find((w) => w.name === value);
+
+  // Click-outside detection (blur/focusに一切依存しない)
+  useEffect(() => {
+    if (!isOpen) return;
+    const handlePointerDown = (e: PointerEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [isOpen]);
 
   const handleSelect = (workName: string) => {
     onChange(workName);
@@ -317,63 +330,57 @@ function WorkSelector({
   return (
     <div className="space-y-2">
       <label className="block text-sm font-medium text-gray-400">{label}</label>
-      <div className="flex flex-wrap gap-1">
-        {GENRES.map((g) => (
-          <button
-            key={g}
-            type="button"
-            onMouseDown={(e) => {
-              e.preventDefault();
-              setGenre(g);
-              setIsOpen(true);
-            }}
-            className={`px-2 py-0.5 rounded text-xs transition-colors ${
-              genre === g
-                ? "bg-blue-600 text-white"
-                : "bg-gray-800 text-gray-400 hover:bg-gray-700"
-            }`}
-          >
-            {g}
-          </button>
-        ))}
-      </div>
-      <div className="relative">
-        <input
-          type="text"
-          value={value}
-          onChange={(e) => { onChange(e.target.value); setIsOpen(true); }}
-          onFocus={() => setIsOpen(true)}
-          onBlur={() => setIsOpen(false)}
-          placeholder={placeholder}
-          className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-        {isOpen && (
-          <div
-            className="absolute z-50 mt-1 w-full max-h-48 overflow-y-auto bg-gray-800 border border-gray-700 rounded-lg shadow-xl"
-          >
-            {filtered
-              .filter((w) => !value || w.name.toLowerCase().includes(value.toLowerCase()))
-              .map((w) => (
-                <button
-                  key={w.name}
-                  type="button"
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    handleSelect(w.name);
-                  }}
-                  className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-700 transition-colors flex items-center justify-between ${
-                    value === w.name ? "bg-blue-900/40 text-blue-300" : "text-gray-200"
-                  }`}
-                >
-                  <span>{w.name}</span>
-                  <span className="text-xs text-gray-500">{w.genre}</span>
-                </button>
-              ))}
-            {filtered.filter((w) => !value || w.name.toLowerCase().includes(value.toLowerCase())).length === 0 && (
-              <div className="px-3 py-2 text-sm text-gray-500">該当なし（自由入力OK）</div>
-            )}
-          </div>
-        )}
+      <div ref={containerRef}>
+        <div className="flex flex-wrap gap-1 mb-2">
+          {GENRES.map((g) => (
+            <button
+              key={g}
+              type="button"
+              onClick={() => { setGenre(g); setIsOpen(true); }}
+              className={`px-2 py-0.5 rounded text-xs transition-colors ${
+                genre === g
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-800 text-gray-400 hover:bg-gray-700"
+              }`}
+            >
+              {g}
+            </button>
+          ))}
+        </div>
+        <div className="relative">
+          <input
+            type="text"
+            value={value}
+            onChange={(e) => { onChange(e.target.value); setIsOpen(true); }}
+            onFocus={() => setIsOpen(true)}
+            placeholder={placeholder}
+            className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          {isOpen && (
+            <div
+              className="absolute z-50 mt-1 w-full max-h-48 overflow-y-auto bg-gray-800 border border-gray-700 rounded-lg shadow-xl"
+            >
+              {filtered
+                .filter((w) => !value || w.name.toLowerCase().includes(value.toLowerCase()))
+                .map((w) => (
+                  <button
+                    key={w.name}
+                    type="button"
+                    onClick={() => handleSelect(w.name)}
+                    className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-700 transition-colors flex items-center justify-between ${
+                      value === w.name ? "bg-blue-900/40 text-blue-300" : "text-gray-200"
+                    }`}
+                  >
+                    <span>{w.name}</span>
+                    <span className="text-xs text-gray-500">{w.genre}</span>
+                  </button>
+                ))}
+              {filtered.filter((w) => !value || w.name.toLowerCase().includes(value.toLowerCase())).length === 0 && (
+                <div className="px-3 py-2 text-sm text-gray-500">該当なし（自由入力OK）</div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
       {selectedWork && selectedWork.characters.length > 0 && (
         <div className="flex flex-wrap gap-1 mt-1">
