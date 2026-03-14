@@ -81,6 +81,15 @@ export interface GenerateInput {
   characterProfiles?: CharacterProfile[];
 }
 
+// ソロモード用（1作品）
+export interface SoloGenerateInput {
+  direction: string;
+  work: string;
+  characters: string[];
+  detail?: string;
+  characterProfiles?: CharacterProfile[];
+}
+
 // マルチモード用
 export type CharacterRole =
   | "protagonist"

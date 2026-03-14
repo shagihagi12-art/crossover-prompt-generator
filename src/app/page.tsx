@@ -4,7 +4,10 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import { GENRES, WORKS, filterByGenre, hasCharacterDb } from "@/lib/works";
 import { CHARACTER_ROLES } from "@/lib/roles";
 import { buildMultiFullPrompt } from "@/lib/prompts-multi";
+import { buildSoloFullPrompt } from "@/lib/prompts-solo";
 import { getCharacterProfile } from "@/data/characters";
+import { getRecommendations, getRecommendedDirections } from "@/lib/recommendations";
+import { STORY_TEMPLATES, STORY_CATEGORIES, filterTemplates } from "@/lib/story-templates";
 import DialoguePanel from "@/components/DialoguePanel";
 import type { CharacterRole, MultiWork } from "@/lib/types";
 
@@ -441,8 +444,16 @@ const DEFAULT_ROLES: CharacterRole[] = [
 ];
 
 export default function GeneratorPage() {
-  const [mode, setMode] = useState<"duo" | "multi">("duo");
+  const [mode, setMode] = useState<"solo" | "duo" | "multi" | "reverse">("duo");
   const [direction, setDirection] = useState("");
+  // Solo mode state
+  const [soloWork, setSoloWork] = useState("");
+  const [soloChars, setSoloChars] = useState<string[]>([]);
+  // Reverse mode state
+  const [reverseWork, setReverseWork] = useState("");
+  const [reverseChars, setReverseChars] = useState<string[]>([]);
+  // Story template state
+  const [storyCategory, setStoryCategory] = useState("全て");
   const [worldWork, setWorldWork] = useState("");
   const [worldChars, setWorldChars] = useState<string[]>([]);
   const [charWork, setCharWork] = useState("");
@@ -498,7 +509,13 @@ export default function GeneratorPage() {
 
     // Load from share URL params
     const params = new URLSearchParams(window.location.search);
-    if (params.get("mode") === "multi") {
+    if (params.get("mode") === "solo") {
+      setMode("solo");
+      if (params.get("d")) setDirection(params.get("d")!);
+      if (params.get("dt")) setDetail(params.get("dt")!);
+      if (params.get("w")) setSoloWork(params.get("w")!);
+      if (params.get("c")) setSoloChars(params.get("c")!.split("・").filter(Boolean));
+    } else if (params.get("mode") === "multi") {
       setMode("multi");
       if (params.get("d")) setDirection(params.get("d")!);
       if (params.get("dt")) setDetail(params.get("dt")!);
@@ -526,9 +543,26 @@ export default function GeneratorPage() {
 
   const world = worldChars.length > 0 ? `${worldWork}（${worldChars.join("・")}）` : worldWork;
   const character = charChars.length > 0 ? `${charWork}の${charChars.join("・")}` : charWork;
+  const canGenerateSolo = direction.trim() && soloWork.trim();
   const canGenerateDuo = direction.trim() && worldWork.trim() && charWork.trim();
   const canGenerateMulti = direction.trim() && multiWorks.filter((w) => w.workName.trim()).length >= 2;
-  const canGenerate = mode === "duo" ? canGenerateDuo : canGenerateMulti;
+  const canGenerate = mode === "reverse" ? false : mode === "solo" ? canGenerateSolo : mode === "duo" ? canGenerateDuo : canGenerateMulti;
+
+  // Reverse mode recommendations
+  const reverseRecommendations = useMemo(
+    () => reverseWork.trim() ? getRecommendations(reverseWork.trim()) : [],
+    [reverseWork]
+  );
+  const reverseDirections = useMemo(
+    () => reverseWork.trim() ? getRecommendedDirections(reverseWork.trim()) : [],
+    [reverseWork]
+  );
+
+  // Filtered story templates
+  const filteredTemplates = useMemo(
+    () => filterTemplates(storyCategory),
+    [storyCategory]
+  );
 
   // Top combos for ranking
   const topCombos = useMemo(() => {
@@ -552,7 +586,16 @@ export default function GeneratorPage() {
     const randomPreset = DIRECTION_PRESETS[Math.floor(Math.random() * DIRECTION_PRESETS.length)];
     setDirection(randomPreset.label);
 
-    if (mode === "multi") {
+    if (mode === "reverse") {
+      const pick = WORKS[Math.floor(Math.random() * WORKS.length)];
+      setReverseWork(pick.name);
+      setReverseChars([]);
+      return; // 逆引きはここで終わり（方向性はレコメンドで選ぶ）
+    } else if (mode === "solo") {
+      const pick = WORKS[Math.floor(Math.random() * WORKS.length)];
+      setSoloWork(pick.name);
+      setSoloChars([]);
+    } else if (mode === "multi") {
       const count = multiWorks.length;
       const used = new Set<string>();
       const newWorks = multiWorks.map((w, i) => {
@@ -591,12 +634,27 @@ export default function GeneratorPage() {
     setError(null);
     setPrompt(null);
 
-    if (mode === "multi") {
+    if (mode === "solo") {
+      try {
+        const profiles = soloChars
+          .map((charName) => getCharacterProfile(charName, soloWork.trim()))
+          .filter((p): p is NonNullable<typeof p> => !!p);
+        const result = buildSoloFullPrompt({
+          direction: direction.trim(),
+          work: soloWork.trim(),
+          characters: soloChars,
+          detail: detail.trim() || undefined,
+          characterProfiles: profiles.length > 0 ? profiles : undefined,
+        });
+        setPrompt(result);
+      } catch {
+        setError("プロンプト生成に失敗しました");
+      }
+    } else if (mode === "multi") {
       try {
         const works: MultiWork[] = multiWorks
           .filter((w) => w.workName.trim())
           .map((w) => {
-            // キャラプロフィール解決
             const profiles = w.characters
               .map((charName) => getCharacterProfile(charName, w.workName.trim()))
               .filter((p): p is NonNullable<typeof p> => !!p);
@@ -661,7 +719,10 @@ export default function GeneratorPage() {
       timestamp: new Date().toISOString(),
       prompt,
     };
-    if (mode === "multi") {
+    if (mode === "solo") {
+      entry.mode = "solo";
+      entry.input = { direction, work: soloWork, characters: soloChars, detail };
+    } else if (mode === "multi") {
       entry.mode = "multi";
       entry.input = { direction, detail };
       entry.works = multiWorks.filter((w) => w.workName.trim());
@@ -685,7 +746,10 @@ export default function GeneratorPage() {
       timestamp: new Date().toISOString(),
       prompt,
     };
-    if (mode === "multi") {
+    if (mode === "solo") {
+      entry.mode = "solo";
+      entry.input = { direction, work: soloWork, characters: soloChars, detail };
+    } else if (mode === "multi") {
       entry.mode = "multi";
       entry.input = { direction, detail };
       entry.works = multiWorks.filter((w) => w.workName.trim());
@@ -706,7 +770,11 @@ export default function GeneratorPage() {
     if (direction) params.set("d", direction);
     if (detail) params.set("dt", detail);
 
-    if (mode === "multi") {
+    if (mode === "solo") {
+      params.set("mode", "solo");
+      if (soloWork) params.set("w", soloWork);
+      if (soloChars.length > 0) params.set("c", soloChars.join("・"));
+    } else if (mode === "multi") {
       params.set("mode", "multi");
       const filledWorks = multiWorks.filter((w) => w.workName.trim());
       filledWorks.forEach((w, i) => {
@@ -763,7 +831,9 @@ export default function GeneratorPage() {
           <div>
             <h2 className="text-xl font-bold">4コマ漫画プロンプト生成</h2>
             <p className="text-sm text-gray-500 mt-1">
-              {mode === "multi"
+              {mode === "solo"
+                ? "1つの作品のキャラだけで4コマ漫画のプロンプトを生成します。"
+                : mode === "multi"
                 ? `${multiWorks.length}作品を選んで、マルチクロスオーバー4コマ漫画のプロンプトを生成します。`
                 : "クロスオーバー4コマ漫画の画像生成プロンプトを作成します。AIに貼り付けてそのまま画像生成できます。"}
             </p>
@@ -780,6 +850,16 @@ export default function GeneratorPage() {
         {/* Mode Toggle */}
         <div className="flex rounded-lg overflow-hidden border border-gray-700">
           <button
+            onClick={() => setMode("solo")}
+            className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
+              mode === "solo"
+                ? "bg-green-600 text-white"
+                : "bg-gray-900 text-gray-400 hover:bg-gray-800"
+            }`}
+          >
+            1作品モード
+          </button>
+          <button
             onClick={() => setMode("duo")}
             className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
               mode === "duo"
@@ -787,7 +867,7 @@ export default function GeneratorPage() {
                 : "bg-gray-900 text-gray-400 hover:bg-gray-800"
             }`}
           >
-            2作品モード（通常）
+            2作品クロスオーバー
           </button>
           <button
             onClick={() => setMode("multi")}
@@ -797,12 +877,97 @@ export default function GeneratorPage() {
                 : "bg-gray-900 text-gray-400 hover:bg-gray-800"
             }`}
           >
-            マルチ作品（3作品〜）
+            マルチ（3作品〜）
+          </button>
+          <button
+            onClick={() => setMode("reverse")}
+            className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
+              mode === "reverse"
+                ? "bg-amber-600 text-white"
+                : "bg-gray-900 text-gray-400 hover:bg-gray-800"
+            }`}
+          >
+            逆引き
           </button>
         </div>
 
-        {/* Direction Presets */}
-        <div>
+        {/* Reverse Mode */}
+        {mode === "reverse" && (
+          <div className="space-y-4">
+            <WorkSelector
+              label="作品を選んで、相性の良いクロスオーバー相手を探す"
+              value={reverseWork}
+              onChange={setReverseWork}
+              characterValues={reverseChars}
+              onCharacterChange={setReverseChars}
+              placeholder="まず作品を選んでください"
+              characterPlaceholder="キャラ指定（任意）"
+            />
+
+            {reverseWork.trim() && reverseDirections.length > 0 && (
+              <div className="bg-amber-900/20 border border-amber-800/50 rounded-xl p-4 space-y-3">
+                <h3 className="text-sm font-bold text-amber-400">おすすめの方向性</h3>
+                <div className="flex flex-wrap gap-2">
+                  {reverseDirections.map((d) => (
+                    <button
+                      key={d}
+                      onClick={() => {
+                        setDirection(d);
+                        setWorldWork(reverseWork);
+                        setWorldChars([...reverseChars]);
+                        setMode("duo");
+                      }}
+                      className="px-3 py-1.5 bg-amber-900/40 hover:bg-amber-800/60 border border-amber-700/50 rounded-lg text-sm text-amber-200 transition-colors"
+                    >
+                      {d}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {reverseWork.trim() && reverseRecommendations.length > 0 && (
+              <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-4 space-y-3">
+                <h3 className="text-sm font-bold text-amber-400">おすすめのクロスオーバー相手</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {reverseRecommendations.map((rec) => (
+                    <button
+                      key={rec.work.name}
+                      onClick={() => {
+                        setWorldWork(reverseWork);
+                        setWorldChars([...reverseChars]);
+                        setCharWork(rec.work.name);
+                        setCharChars([]);
+                        if (rec.directions.length > 0) {
+                          setDirection(rec.directions[Math.floor(Math.random() * rec.directions.length)]);
+                        }
+                        setMode("duo");
+                      }}
+                      className="text-left px-3 py-2.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg transition-colors group"
+                    >
+                      <div className="text-sm font-medium text-gray-200 group-hover:text-white">
+                        {reverseWork} <span className="text-gray-500">×</span> {rec.work.name}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-0.5">
+                        {rec.reason} ・ {rec.directions[0]}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-600">クリックで2作品モードに移動して自動入力します</p>
+              </div>
+            )}
+
+            {reverseWork.trim() && reverseRecommendations.length === 0 && (
+              <div className="text-sm text-gray-500 text-center py-4">
+                作品を選択すると、おすすめの組み合わせが表示されます
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Direction Presets (not shown in reverse mode) */}
+        {mode !== "reverse" && <div>
           <label className="block text-sm font-medium text-gray-400 mb-2">
             方向性（テーマ・トーン）
           </label>
@@ -814,7 +979,9 @@ export default function GeneratorPage() {
                   key={p.id}
                   onClick={() => {
                     setDirection(p.label);
-                    if (mode === "multi") {
+                    if (mode === "solo") {
+                      // ソロモード: 方向性だけセット（作品は変えない）
+                    } else if (mode === "multi") {
                       // マルチモード: プリセットの2作品 + ランダムで1作品追加
                       const combo = p.combos[Math.floor(Math.random() * p.combos.length)];
                       const used = new Set([combo.workA, combo.workB]);
@@ -857,14 +1024,66 @@ export default function GeneratorPage() {
               );
             })}
           </div>
-          <input
-            type="text"
+          <textarea
             value={direction}
             onChange={(e) => setDirection(e.target.value)}
-            placeholder="プリセットを選ぶか、自由入力"
-            className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="プリセットを選ぶか、テーマ・トーンを自由に入力（例: 「放課後の教室でのほのぼの日常」「修行中に起きたハプニング」「料理対決で予想外の展開」）"
+            rows={2}
+            className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
           />
-        </div>
+        </div>}
+
+        {/* Story Templates (not shown in reverse mode) */}
+        {mode !== "reverse" && (
+          <div>
+            <label className="block text-sm font-medium text-gray-400 mb-2">
+              ストーリーテンプレート（任意）
+            </label>
+            <div className="flex flex-wrap gap-1 mb-2">
+              {STORY_CATEGORIES.map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setStoryCategory(cat)}
+                  className={`px-2 py-0.5 rounded text-xs transition-colors ${
+                    storyCategory === cat
+                      ? "bg-amber-600 text-white"
+                      : "bg-gray-800 text-gray-400 hover:bg-gray-700"
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {filteredTemplates.map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => setDetail(t.scenario)}
+                  className="text-left px-3 py-2 rounded-lg text-sm transition-colors border bg-gray-900 border-gray-700 text-gray-300 hover:border-amber-600/50 hover:bg-gray-800"
+                >
+                  <div className="font-medium">{t.label}</div>
+                  <div className="text-xs opacity-50 mt-0.5 line-clamp-1">{t.category}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Solo Mode: Single Work */}
+        {mode === "solo" && (
+          <div>
+            <WorkSelector
+              label="作品を選択"
+              value={soloWork}
+              onChange={setSoloWork}
+              characterValues={soloChars}
+              onCharacterChange={setSoloChars}
+              placeholder="作品名を選択 or 入力"
+              characterPlaceholder="キャラ指定（複数可・「・」区切り）"
+            />
+          </div>
+        )}
 
         {/* Duo Mode: World & Character */}
         {mode === "duo" && (
@@ -989,21 +1208,24 @@ export default function GeneratorPage() {
           </div>
         )}
 
-        {/* Detail */}
-        <div>
-          <label className="block text-sm font-medium text-gray-400 mb-1">
-            具体的な要望・イメージ（任意）
-          </label>
-          <textarea
-            value={detail}
-            onChange={(e) => setDetail(e.target.value)}
-            placeholder={'例: たぬきち商店でローンを組まされる。「天下の大将軍ですよ」「ンォフゥッ」'}
-            rows={3}
-            className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
-          />
-        </div>
+        {/* Detail (not shown in reverse mode) */}
+        {mode !== "reverse" && (
+          <div>
+            <label className="block text-sm font-medium text-gray-400 mb-1">
+              具体的な要望・イメージ（任意）
+            </label>
+            <textarea
+              value={detail}
+              onChange={(e) => setDetail(e.target.value)}
+              placeholder={'例: たぬきち商店でローンを組まされる。「天下の大将軍ですよ」「ンォフゥッ」'}
+              rows={3}
+              className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+            />
+          </div>
+        )}
 
-        {/* Generate + Share Buttons */}
+        {/* Generate + Share Buttons (not shown in reverse mode) */}
+        {mode !== "reverse" && (
         <div className="flex gap-2">
           <button
             onClick={handleGenerate}
@@ -1027,6 +1249,7 @@ export default function GeneratorPage() {
             </button>
           )}
         </div>
+        )}
 
         {error && (
           <div className="bg-red-900/30 border border-red-800 rounded-lg p-3 text-sm text-red-300">
