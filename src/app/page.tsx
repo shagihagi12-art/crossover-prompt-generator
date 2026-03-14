@@ -456,6 +456,8 @@ export default function GeneratorPage() {
   // Story template state
   const [storyCategory, setStoryCategory] = useState("全て");
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
+  const [openDirection, setOpenDirection] = useState(false);
+  const [openTemplate, setOpenTemplate] = useState(false);
   const [worldWork, setWorldWork] = useState("");
   const [worldChars, setWorldChars] = useState<string[]>([]);
   const [charWork, setCharWork] = useState("");
@@ -1034,117 +1036,150 @@ export default function GeneratorPage() {
         )}
 
         {/* Direction Presets (not shown in reverse mode) */}
-        {mode !== "reverse" && <div>
-          <label className="block text-sm font-medium text-gray-400 mb-2">
-            方向性（テーマ・トーン）
-          </label>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2">
-            {DIRECTION_PRESETS.map((p) => {
-              const example = p.combos[0];
-              return (
-                <button
-                  key={p.id}
-                  onClick={() => {
-                    setDirection(p.label);
-                    if (mode === "solo") {
-                      // ソロモード: 方向性だけセット（作品は変えない）
-                    } else if (mode === "multi") {
-                      // マルチモード: プリセットの2作品 + ランダムで1作品追加
-                      const combo = p.combos[Math.floor(Math.random() * p.combos.length)];
-                      const used = new Set([combo.workA, combo.workB]);
-                      const extraWorks: string[] = [];
-                      for (let ei = 2; ei < multiWorks.length; ei++) {
-                        let pick = WORKS[Math.floor(Math.random() * WORKS.length)];
-                        let attempts = 0;
-                        while (used.has(pick.name) && attempts < 100) {
-                          pick = WORKS[Math.floor(Math.random() * WORKS.length)];
-                          attempts++;
-                        }
-                        used.add(pick.name);
-                        extraWorks.push(pick.name);
-                      }
-                      const allWorkNames = [combo.workA, combo.workB, ...extraWorks];
-                      setMultiWorks(multiWorks.map((w, i) => ({
-                        ...w,
-                        workName: allWorkNames[i] || "",
-                        characters: [],
-                        role: DEFAULT_ROLES[i] || "free" as CharacterRole,
-                        freeRoleText: "",
-                      })));
-                    } else {
-                      const combo = p.combos[Math.floor(Math.random() * p.combos.length)];
-                      setWorldWork(combo.workA);
-                      setWorldChars([]);
-                      setCharWork(combo.workB);
-                      setCharChars([]);
-                    }
-                  }}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors border ${
-                    direction === p.label
-                      ? "bg-blue-600 border-blue-500 text-white"
-                      : "bg-gray-900 border-gray-700 text-gray-300 hover:border-gray-500"
-                  }`}
-                >
-                  <div>{p.label}</div>
-                  <div className="text-xs opacity-60 mt-0.5">{example.workA} × {example.workB}</div>
-                </button>
-              );
-            })}
+        {mode !== "reverse" && (
+          <div className="bg-gray-900/50 border border-gray-800 rounded-xl overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setOpenDirection(!openDirection)}
+              className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-800/50 transition-colors text-left"
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-gray-400">方向性（テーマ・トーン）</span>
+                {direction.trim() && (
+                  <span className="px-2 py-0.5 bg-blue-600/20 border border-blue-500/50 rounded text-xs text-blue-300 truncate max-w-48">
+                    {direction.trim()}
+                  </span>
+                )}
+              </div>
+              <span className="text-gray-500 text-sm">{openDirection ? "▲" : "▼"}</span>
+            </button>
+            {openDirection && (
+              <div className="px-4 pb-4 border-t border-gray-800 pt-3 space-y-2">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {DIRECTION_PRESETS.map((p) => {
+                    const example = p.combos[0];
+                    return (
+                      <button
+                        key={p.id}
+                        onClick={() => {
+                          setDirection(p.label);
+                          if (mode === "solo") {
+                            // ソロモード: 方向性だけセット（作品は変えない）
+                          } else if (mode === "multi") {
+                            const combo = p.combos[Math.floor(Math.random() * p.combos.length)];
+                            const used = new Set([combo.workA, combo.workB]);
+                            const extraWorks: string[] = [];
+                            for (let ei = 2; ei < multiWorks.length; ei++) {
+                              let pick = WORKS[Math.floor(Math.random() * WORKS.length)];
+                              let attempts = 0;
+                              while (used.has(pick.name) && attempts < 100) {
+                                pick = WORKS[Math.floor(Math.random() * WORKS.length)];
+                                attempts++;
+                              }
+                              used.add(pick.name);
+                              extraWorks.push(pick.name);
+                            }
+                            const allWorkNames = [combo.workA, combo.workB, ...extraWorks];
+                            setMultiWorks(multiWorks.map((w, i) => ({
+                              ...w,
+                              workName: allWorkNames[i] || "",
+                              characters: [],
+                              role: DEFAULT_ROLES[i] || "free" as CharacterRole,
+                              freeRoleText: "",
+                            })));
+                          } else {
+                            const combo = p.combos[Math.floor(Math.random() * p.combos.length)];
+                            setWorldWork(combo.workA);
+                            setWorldChars([]);
+                            setCharWork(combo.workB);
+                            setCharChars([]);
+                          }
+                        }}
+                        className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors border ${
+                          direction === p.label
+                            ? "bg-blue-600 border-blue-500 text-white"
+                            : "bg-gray-900 border-gray-700 text-gray-300 hover:border-gray-500"
+                        }`}
+                      >
+                        <div>{p.label}</div>
+                        <div className="text-xs opacity-60 mt-0.5">{example.workA} × {example.workB}</div>
+                      </button>
+                    );
+                  })}
+                </div>
+                <textarea
+                  value={direction}
+                  onChange={(e) => setDirection(e.target.value)}
+                  placeholder="プリセットを選ぶか、テーマ・トーンを自由に入力（例: 「放課後の教室でのほのぼの日常」「修行中に起きたハプニング」「料理対決で予想外の展開」）"
+                  rows={2}
+                  className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+                />
+              </div>
+            )}
           </div>
-          <textarea
-            value={direction}
-            onChange={(e) => setDirection(e.target.value)}
-            placeholder="プリセットを選ぶか、テーマ・トーンを自由に入力（例: 「放課後の教室でのほのぼの日常」「修行中に起きたハプニング」「料理対決で予想外の展開」）"
-            rows={2}
-            className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
-          />
-        </div>}
+        )}
 
         {/* Story Templates (not shown in reverse mode) */}
         {mode !== "reverse" && (
-          <div>
-            <label className="block text-sm font-medium text-gray-400 mb-2">
-              ストーリーテンプレート（任意）
-            </label>
-            <div className="flex flex-wrap gap-1 mb-2">
-              {STORY_CATEGORIES.map((cat) => (
-                <button
-                  key={cat}
-                  type="button"
-                  onClick={() => setStoryCategory(cat)}
-                  className={`px-2 py-0.5 rounded text-xs transition-colors ${
-                    storyCategory === cat
-                      ? "bg-amber-600 text-white"
-                      : "bg-gray-800 text-gray-400 hover:bg-gray-700"
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {filteredTemplates.map((t) => (
-                <button
-                  key={t.id}
-                  onClick={() => {
-                    if (selectedTemplate === t.id) {
-                      setSelectedTemplate(null);
-                    } else {
-                      setSelectedTemplate(t.id);
-                      setDetail(t.scenario);
-                    }
-                  }}
-                  className={`text-left px-3 py-2 rounded-lg text-sm transition-colors border ${
-                    selectedTemplate === t.id
-                      ? "bg-amber-600/20 border-amber-500 text-amber-200 ring-1 ring-amber-500/50"
-                      : "bg-gray-900 border-gray-700 text-gray-300 hover:border-amber-600/50 hover:bg-gray-800"
-                  }`}
-                >
-                  <div className="font-medium">{selectedTemplate === t.id ? "✓ " : ""}{t.label}</div>
-                  <div className="text-xs opacity-50 mt-0.5 line-clamp-1">{t.category}</div>
-                </button>
-              ))}
-            </div>
+          <div className="bg-gray-900/50 border border-gray-800 rounded-xl overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setOpenTemplate(!openTemplate)}
+              className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-800/50 transition-colors text-left"
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-gray-400">ストーリーテンプレート（任意）</span>
+                {selectedTemplate && (
+                  <span className="px-2 py-0.5 bg-amber-600/20 border border-amber-500/50 rounded text-xs text-amber-300 truncate max-w-48">
+                    {STORY_TEMPLATES.find(t => t.id === selectedTemplate)?.label}
+                  </span>
+                )}
+              </div>
+              <span className="text-gray-500 text-sm">{openTemplate ? "▲" : "▼"}</span>
+            </button>
+            {openTemplate && (
+              <div className="px-4 pb-4 border-t border-gray-800 pt-3 space-y-2">
+                <div className="flex flex-wrap gap-1 mb-1">
+                  {STORY_CATEGORIES.map((cat) => (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => setStoryCategory(cat)}
+                      className={`px-2 py-0.5 rounded text-xs transition-colors ${
+                        storyCategory === cat
+                          ? "bg-amber-600 text-white"
+                          : "bg-gray-800 text-gray-400 hover:bg-gray-700"
+                      }`}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {filteredTemplates.map((t) => (
+                    <button
+                      key={t.id}
+                      onClick={() => {
+                        if (selectedTemplate === t.id) {
+                          setSelectedTemplate(null);
+                        } else {
+                          setSelectedTemplate(t.id);
+                          setDetail(t.scenario);
+                        }
+                      }}
+                      className={`text-left px-3 py-2 rounded-lg text-sm transition-colors border ${
+                        selectedTemplate === t.id
+                          ? "bg-amber-600/20 border-amber-500 text-amber-200 ring-1 ring-amber-500/50"
+                          : "bg-gray-900 border-gray-700 text-gray-300 hover:border-amber-600/50 hover:bg-gray-800"
+                      }`}
+                    >
+                      <div className="font-medium">{selectedTemplate === t.id ? "✓ " : ""}{t.label}</div>
+                      <div className="text-xs opacity-50 mt-0.5 line-clamp-1">{t.category}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 

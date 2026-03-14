@@ -68,12 +68,28 @@ A single vertical strip of EXACTLY 4 panels arranged in ONE column from top to b
 {キャラB名} ({外見特徴}), {ポーズ・表情}. {キャラB名} says: 「セリフ」
 
 ### キャラ初回登場時:
-外見を具体的かつ詳細に描写。以下を必ず含める:
-- 髪型・髪色（具体的な色名）
-- 服装の詳細（色・デザイン・特徴的なパーツ）
-- 持ち物・アクセサリー（武器、帽子、マント等のアイコニックなアイテム）
+外見を具体的かつ詳細に描写。以下を**全て**含める:
+- 髪型・髪色（具体的な色名・長さ・スタイル）
+- 目の色
+- 肌の色調
+- 服装の詳細（上着・下・靴・色・模様・デザイン・素材感）
+- 持ち物・アクセサリー（武器、帽子、マント、イヤリング等のアイコニックなアイテム）
+- 体格の特徴（チビキャラ内での相対的なサイズ差）
 - 画風（作品の画風タッチを明記）
-- 全キャラ chibi/super-deformed style
+- 全キャラ chibi/super-deformed style (oversized head, tiny body, 2-3 head ratio, premium quality with shiny eyes and dynamic pose)
+
+### 2回目以降の登場時:
+フルの外見描写は不要だが、キャラ名 + 最も特徴的な視覚記号1-2個 + そのコマでの表情・ポーズ・アクションは毎回含める
+
+### 背景・環境の描写（各パネルで必ず含める）:
+- 場所の具体的な描写
+- 時間帯の光（例 "warm golden sunset lighting", "bright midday sun"）
+- 天候・季節の要素（該当する場合）
+- 背景の小物・ディテール（シーンに合った小物を2-3個）
+
+### 効果音・漫画記号:
+- Sound effect text: "効果音"（例: "ドーン!!", "ゴゴゴ", "キラーン"）
+- 漫画的な演出記号を積極的に使う（汗マーク、怒りマーク、ハートマーク、キラキラ、衝撃線、集中線等）
 
 ### 末尾のStyle指定（必ず含める）:
 - Style: Premium-quality chibi/super-deformed anime style, like professional manga merchandise or official chibi spin-off art. Consistent {作品名} art style throughout all panels. ALL characters must be drawn as adorable chibi with oversized heads, tiny rounded bodies, and 2-3 head-to-body ratio. Professional-grade line art with varying line weight, smooth cel-shaded coloring with subtle shadows and highlights, shiny detailed eyes with light reflections, vibrant and harmonious color palette. Characters must have exaggerated expressive faces and dynamic full-body poses. Absolutely NOT photorealistic, NOT 3D CGI, NOT normal human proportions.

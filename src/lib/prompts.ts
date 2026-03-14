@@ -69,15 +69,30 @@ A single vertical strip of EXACTLY 4 panels arranged in ONE column from top to b
 {キャラB名} ({外見特徴, 画風指定}), {ポーズ・表情}. {キャラB名} says: 「セリフ」
 
 ### キャラ初回登場時:
-外見を具体的かつ詳細に描写。以下を必ず含める:
-- 髪型・髪色（具体的な色名: 例 "spiky black hair", "long pink hair with twin tails"）
-- 服装の詳細（色・デザイン・特徴的なパーツ）
-- 持ち物・アクセサリー（武器、帽子、マント等のアイコニックなアイテム）
-- 画風（所属作品の画風タッチを明記）
+外見を具体的かつ詳細に描写。以下を**全て**含める:
+- 髪型・髪色（具体的な色名・長さ・スタイル: 例 "spiky black hair with blue highlights", "long pink hair in twin tails with red ribbons"）
+- 目の色（例 "sharp crimson eyes", "large round emerald green eyes"）
+- 肌の色調（例 "fair-skinned", "tanned"）
+- 服装の詳細（上着・下・靴・色・模様・デザイン・素材感: 例 "wearing a dark blue school uniform with gold buttons and red tie, black loafers"）
+- 持ち物・アクセサリー（武器、帽子、マント、イヤリング、バッグ等のアイコニックなアイテム）
+- 体格の特徴（チビキャラ内での相対的なサイズ差: 例 "slightly taller chibi", "the smallest chibi of the group"）
+- 画風（所属作品の画風タッチを明記: 例 "drawn in the bold, dynamic style of Blue Lock"）
 - 全キャラ chibi/super-deformed style (oversized head, tiny body, 2-3 head ratio, premium quality with shiny eyes and dynamic pose)
 
-### 効果音:
-Sound effect text: "効果音"
+### 2回目以降の登場時:
+フルの外見描写は不要だが、以下は毎回含める:
+- キャラ名 + 画風 + 最も特徴的な視覚記号1-2個（例 "Goku (spiky black hair, orange gi, Dragon Ball style chibi)"）
+- そのコマでの表情・ポーズ・アクション
+
+### 背景・環境の描写（各パネルで必ず含める）:
+- 場所の具体的な描写（例 "a cozy konbini interior with fluorescent lighting and product shelves" ではなく単に "a store"）
+- 時間帯の光（例 "warm golden sunset lighting", "bright midday sun", "dim nighttime with street lamps"）
+- 天候・季節の要素（該当する場合: 桜の花びら、雪、雨粒、紅葉等）
+- 背景の小物・ディテール（ポスター、看板、食べ物、道具等、シーンに合った小物を2-3個）
+
+### 効果音・漫画記号:
+- Sound effect text: "効果音"（例: "ドーン!!", "ゴゴゴ", "キラーン", "ガーン"）
+- 漫画的な演出記号を積極的に使う（汗マーク💧、怒りマーク💢、ハートマーク❤、キラキラ✨、衝撃線、集中線、背景の斜線、花を背負うエフェクト等）
 
 ### 末尾のStyle指定（必ず含める）:
 - Style: Premium-quality chibi/super-deformed anime style, like professional manga merchandise or official chibi spin-off art. {作品Aの画風特徴} meets {作品Bの画風特徴}, contrasting art styles coexisting in the same panels. ALL characters must be drawn as adorable chibi with oversized heads, tiny rounded bodies, and 2-3 head-to-body ratio. Professional-grade line art with varying line weight, smooth cel-shaded coloring with subtle shadows and highlights, shiny detailed eyes with light reflections, vibrant and harmonious color palette. Characters must have exaggerated expressive faces and dynamic full-body poses. Absolutely NOT photorealistic, NOT 3D CGI, NOT normal human proportions.
