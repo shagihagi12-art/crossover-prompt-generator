@@ -551,7 +551,7 @@ export default function GeneratorPage() {
   const canGenerateDuo = direction.trim() && worldWork.trim() && charWork.trim();
   const canGenerateMulti = direction.trim() && multiWorks.filter((w) => w.workName.trim()).length >= 2;
   const canGenerate = mode === "reverse" ? false
-    : (!!selectedTemplate && detail.trim() !== "")
+    : detail.trim() !== ""
     || (mode === "solo" ? canGenerateSolo : mode === "duo" ? canGenerateDuo : canGenerateMulti);
 
   // Reverse mode recommendations
@@ -651,8 +651,8 @@ export default function GeneratorPage() {
       ? (!!effectiveDirection && !!worldWork.trim() && !!charWork.trim())
       : (!!effectiveDirection && multiWorks.filter(w => w.workName.trim()).length >= 2);
 
-    // テンプレート選択済みだが通常フローの必須項目が足りない場合
-    if (!normalFlowReady && selectedTemplate) {
+    // 通常フローの必須項目が足りないがdetailに内容がある場合
+    if (!normalFlowReady && detail.trim()) {
       // 選択済みの作品情報を収集
       let worksInfo: string | undefined;
 
