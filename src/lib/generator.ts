@@ -23,14 +23,22 @@ export function buildTemplateOnlyPrompt(
   scenario: string,
   templateLabel?: string,
   direction?: string,
+  worksInfo?: string,
 ): string {
   const lines = [
     "以下のシナリオで4コマ漫画クロスオーバーの画像生成プロンプトを作成してください。",
     "",
-    "※作品・キャラクターの指定はありません。このシナリオに最もマッチし、面白いギャップが生まれる2〜3作品のキャラクターを選んでください。",
-    "※有名なアニメ・漫画・ゲーム作品から選ぶと、キャラの描写が正確になります。",
-    "",
   ];
+
+  if (worksInfo) {
+    lines.push(worksInfo, "");
+  } else {
+    lines.push(
+      "※作品・キャラクターの指定はありません。このシナリオに最もマッチし、面白いギャップが生まれる2〜3作品のキャラクターを選んでください。",
+      "※有名なアニメ・漫画・ゲーム作品から選ぶと、キャラの描写が正確になります。",
+      "",
+    );
+  }
 
   if (templateLabel) {
     lines.push(`【ストーリーテンプレート】${templateLabel}`);
@@ -41,9 +49,13 @@ export function buildTemplateOnlyPrompt(
     lines.push(`【方向性・テーマ】${direction}`);
   }
 
+  lines.push("");
+
+  if (!worksInfo) {
+    lines.push("★重要: まず最適な2〜3作品を選び、それぞれのキャラクターを作品Aの世界観側・作品Bの迷い込む側として設定してください。");
+  }
+
   lines.push(
-    "",
-    "★重要: まず最適な2〜3作品を選び、それぞれのキャラクターを作品Aの世界観側・作品Bの迷い込む側として設定してください。",
     "★重要: prompt_full は必ず冒頭に「A single vertical strip of EXACTLY 4 panels arranged in ONE column from top to bottom」で始めてください。",
     "★重要: パネルは [Panel 1 - TOP] 〜 [Panel 4 - BOTTOM] の形式で区切ってください。",
     "★重要: 吹き出しの位置指定（tail pointing to, placed above on the left等）は入れないでください。",

@@ -638,18 +638,61 @@ export default function GeneratorPage() {
     setError(null);
     setPrompt(null);
 
-    // Template-only mode: テンプレートだけ選択されていて通常の必須項目が揃っていない場合
-    const normalFlowReady = mode === "solo" ? canGenerateSolo
-      : mode === "duo" ? canGenerateDuo
-      : canGenerateMulti;
+    // テンプレートのラベルを方向性のフォールバックに使用
+    const templateObj = selectedTemplate ? STORY_TEMPLATES.find(t => t.id === selectedTemplate) : null;
+    const effectiveDirection = direction.trim() || templateObj?.label || "";
 
+    // effectiveDirection込みで通常フローが可能か判定
+    const normalFlowReady = mode === "solo"
+      ? (!!effectiveDirection && !!soloWork.trim())
+      : mode === "duo"
+      ? (!!effectiveDirection && !!worldWork.trim() && !!charWork.trim())
+      : (!!effectiveDirection && multiWorks.filter(w => w.workName.trim()).length >= 2);
+
+    // テンプレート選択済みだが通常フローの必須項目が足りない場合
     if (!normalFlowReady && selectedTemplate) {
+      // 選択済みの作品情報を収集
+      let worksInfo: string | undefined;
+
+      if (mode === "solo" && soloWork.trim()) {
+        const chars = soloChars.length > 0 ? `（${soloChars.join("・")}）` : "";
+        worksInfo = `【作品】${soloWork}${chars}\n※この作品のキャラクターで4コマ漫画を作成してください。`;
+      } else if (mode === "duo") {
+        const parts: string[] = [];
+        if (worldWork.trim()) {
+          const wc = worldChars.length > 0 ? `（${worldChars.join("・")}）` : "";
+          parts.push(`【作品A（世界観・舞台）】${worldWork}${wc}`);
+        }
+        if (charWork.trim()) {
+          const cc = charChars.length > 0 ? `（${charChars.join("・")}）` : "";
+          parts.push(`【作品B（迷い込むキャラ）】${charWork}${cc}`);
+        }
+        if (parts.length > 0) {
+          worksInfo = parts.join("\n");
+          if (parts.length === 1) {
+            worksInfo += "\n※もう1作品はシナリオに合うものをAIが選んでください。";
+          }
+        }
+      } else if (mode === "multi") {
+        const filledWorks = multiWorks.filter(w => w.workName.trim());
+        if (filledWorks.length > 0) {
+          const workLines = filledWorks.map((w, i) => {
+            const chars = w.characters.length > 0 ? `（${w.characters.join("・")}）` : "";
+            return `【作品${i + 1}】${w.workName}${chars}`;
+          });
+          worksInfo = workLines.join("\n");
+          if (filledWorks.length === 1) {
+            worksInfo += "\n※追加の作品はシナリオに合うものをAIが選んでください。";
+          }
+        }
+      }
+
       try {
-        const template = STORY_TEMPLATES.find(t => t.id === selectedTemplate);
         const result = buildTemplateOnlyPrompt(
           detail.trim(),
-          template?.label,
+          templateObj?.label,
           direction.trim() || undefined,
+          worksInfo,
         );
         setPrompt(result);
       } catch {
@@ -664,7 +707,7 @@ export default function GeneratorPage() {
           .map((charName) => getCharacterProfile(charName, soloWork.trim()))
           .filter((p): p is NonNullable<typeof p> => !!p);
         const result = buildSoloFullPrompt({
-          direction: direction.trim(),
+          direction: effectiveDirection,
           work: soloWork.trim(),
           characters: soloChars,
           detail: detail.trim() || undefined,
@@ -691,7 +734,7 @@ export default function GeneratorPage() {
             };
           });
         const result = buildMultiFullPrompt({
-          direction: direction.trim(),
+          direction: effectiveDirection,
           works,
           detail: detail.trim() || undefined,
         });
@@ -706,7 +749,7 @@ export default function GeneratorPage() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            direction: direction.trim(),
+            direction: effectiveDirection,
             world: world.trim(),
             character: character.trim(),
             detail: detail.trim() || undefined,
