@@ -5,6 +5,7 @@ import { GENRES, WORKS, filterByGenre, hasCharacterDb } from "@/lib/works";
 import { CHARACTER_ROLES } from "@/lib/roles";
 import { buildMultiFullPrompt } from "@/lib/prompts-multi";
 import { buildSoloFullPrompt } from "@/lib/prompts-solo";
+import { buildTemplateOnlyPrompt } from "@/lib/generator";
 import { getCharacterProfile } from "@/data/characters";
 import { getRecommendations, getRecommendedDirections } from "@/lib/recommendations";
 import { STORY_TEMPLATES, STORY_CATEGORIES, filterTemplates } from "@/lib/story-templates";
@@ -454,6 +455,7 @@ export default function GeneratorPage() {
   const [reverseChars, setReverseChars] = useState<string[]>([]);
   // Story template state
   const [storyCategory, setStoryCategory] = useState("全て");
+  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [worldWork, setWorldWork] = useState("");
   const [worldChars, setWorldChars] = useState<string[]>([]);
   const [charWork, setCharWork] = useState("");
@@ -546,7 +548,9 @@ export default function GeneratorPage() {
   const canGenerateSolo = direction.trim() && soloWork.trim();
   const canGenerateDuo = direction.trim() && worldWork.trim() && charWork.trim();
   const canGenerateMulti = direction.trim() && multiWorks.filter((w) => w.workName.trim()).length >= 2;
-  const canGenerate = mode === "reverse" ? false : mode === "solo" ? canGenerateSolo : mode === "duo" ? canGenerateDuo : canGenerateMulti;
+  const canGenerate = mode === "reverse" ? false
+    : (!!selectedTemplate && detail.trim() !== "")
+    || (mode === "solo" ? canGenerateSolo : mode === "duo" ? canGenerateDuo : canGenerateMulti);
 
   // Reverse mode recommendations
   const reverseRecommendations = useMemo(
@@ -633,6 +637,26 @@ export default function GeneratorPage() {
     if (!canGenerate) return;
     setError(null);
     setPrompt(null);
+
+    // Template-only mode: テンプレートだけ選択されていて通常の必須項目が揃っていない場合
+    const normalFlowReady = mode === "solo" ? canGenerateSolo
+      : mode === "duo" ? canGenerateDuo
+      : canGenerateMulti;
+
+    if (!normalFlowReady && selectedTemplate) {
+      try {
+        const template = STORY_TEMPLATES.find(t => t.id === selectedTemplate);
+        const result = buildTemplateOnlyPrompt(
+          detail.trim(),
+          template?.label,
+          direction.trim() || undefined,
+        );
+        setPrompt(result);
+      } catch {
+        setError("プロンプト生成に失敗しました");
+      }
+      return;
+    }
 
     if (mode === "solo") {
       try {
@@ -1059,10 +1083,21 @@ export default function GeneratorPage() {
               {filteredTemplates.map((t) => (
                 <button
                   key={t.id}
-                  onClick={() => setDetail(t.scenario)}
-                  className="text-left px-3 py-2 rounded-lg text-sm transition-colors border bg-gray-900 border-gray-700 text-gray-300 hover:border-amber-600/50 hover:bg-gray-800"
+                  onClick={() => {
+                    if (selectedTemplate === t.id) {
+                      setSelectedTemplate(null);
+                    } else {
+                      setSelectedTemplate(t.id);
+                      setDetail(t.scenario);
+                    }
+                  }}
+                  className={`text-left px-3 py-2 rounded-lg text-sm transition-colors border ${
+                    selectedTemplate === t.id
+                      ? "bg-amber-600/20 border-amber-500 text-amber-200 ring-1 ring-amber-500/50"
+                      : "bg-gray-900 border-gray-700 text-gray-300 hover:border-amber-600/50 hover:bg-gray-800"
+                  }`}
                 >
-                  <div className="font-medium">{t.label}</div>
+                  <div className="font-medium">{selectedTemplate === t.id ? "✓ " : ""}{t.label}</div>
                   <div className="text-xs opacity-50 mt-0.5 line-clamp-1">{t.category}</div>
                 </button>
               ))}
@@ -1216,7 +1251,10 @@ export default function GeneratorPage() {
             </label>
             <textarea
               value={detail}
-              onChange={(e) => setDetail(e.target.value)}
+              onChange={(e) => {
+                setDetail(e.target.value);
+                if (!e.target.value.trim()) setSelectedTemplate(null);
+              }}
               placeholder={'例: たぬきち商店でローンを組まされる。「天下の大将軍ですよ」「ンォフゥッ」'}
               rows={3}
               className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
